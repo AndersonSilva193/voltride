@@ -31,9 +31,9 @@ interface Phrase {
 
         <!-- intro -->
         <div class="intro" [class.gone]="progress() > 0.05">
-          <p class="eyebrow">Mobilidade elétrica · 2026</p>
+          <p class="eyebrow">Bike elétrica · 2026</p>
           <h1>VOLT<span class="grad-text">RIDE</span></h1>
-          <p class="lead">A cidade nunca foi tão silenciosa. Nem tão rápida.</p>
+          <p class="lead">Silencio e agilidade.</p>
           <div class="hint" aria-hidden="true"><i></i><span>Role para acelerar</span></div>
         </div>
 
