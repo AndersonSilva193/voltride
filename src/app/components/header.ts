@@ -44,7 +44,7 @@ import { contactLink } from '../data/contact';
       &::after { content: ''; position: absolute; left: 0; bottom: -6px; height: 2px; width: 0; background: var(--grad); transition: width .3s; }
       &:hover, &.active { color: var(--text); &::after { width: 100%; } } } }
     .actions { display: flex; align-items: center; gap: 8px; }
-    .contact { padding: 11px 22px; font-size: .9rem; }
+    .contact { margin-block: 8px; padding: 11px 22px; font-size: .9rem; }
     .burger { display: none; background: none; border: 0; width: 44px; height: 44px; position: relative;
       span { position: absolute; left: 11px; right: 11px; height: 2px; background: var(--text); transition: transform .3s; &:first-child { top: 17px; } &:last-child { top: 25px; } } }
     .menu .burger span:first-child { transform: translateY(4px) rotate(45deg); }
