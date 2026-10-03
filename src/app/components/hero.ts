@@ -33,7 +33,7 @@ interface Phrase {
         <div class="intro" [class.gone]="progress() > 0.05">
           <p class="eyebrow">Bike elétrica · 2026</p>
           <h1>VOLT<span class="grad-text">RIDE</span></h1>
-          <p class="lead">Silencio e agilidade.</p>
+          <p class="lead">Economia e agilidade.</p>
           <div class="hint" aria-hidden="true"><i></i><span>Role para acelerar</span></div>
         </div>
 
@@ -86,7 +86,10 @@ interface Phrase {
 
     .intro { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; text-align: center; gap: 16px; padding: 0 20px; transition: opacity .6s, transform .6s, filter .6s;
       h1 { font-size: clamp(3rem, 12vw, 9rem); font-weight: 900; letter-spacing: .08em; text-shadow: 0 0 60px rgba(25, 230, 168, .35); }
-      .lead { color: var(--muted); font-size: clamp(1rem, 2vw, 1.3rem); max-width: 520px; }
+      .lead { color: var(--text); font-size: clamp(1rem, 2vw, 1.3rem); font-weight: 600; letter-spacing: .03em; max-width: 520px;
+        padding: 9px 18px; border: 1px solid rgba(25, 230, 168, .35); border-radius: 999px;
+        background: rgba(4, 9, 12, .72); box-shadow: 0 8px 24px rgba(0, 0, 0, .25), 0 0 24px rgba(25, 230, 168, .1);
+        backdrop-filter: blur(8px); text-shadow: 0 1px 8px rgba(0, 0, 0, .8); }
       &.gone { opacity: 0; transform: translateY(-40px) scale(1.05); filter: blur(10px); pointer-events: none; } }
     .hint { position: absolute; bottom: 38px; display: grid; justify-items: center; gap: 12px; font-size: .75rem; letter-spacing: .3em; text-transform: uppercase; color: var(--muted);
       i { width: 24px; height: 40px; border: 2px solid var(--green); border-radius: 14px; position: relative;
@@ -140,7 +143,7 @@ export class Hero implements AfterViewInit, OnDestroy {
   protected phrases: Phrase[] = [
     { text: 'Zero emissão.', sub: 'Nenhum ruído. Nenhuma fumaça.', from: 0.10, to: 0.25, pos: 'left' },
     { text: '100% elétrica.', sub: 'Torque instantâneo desde o primeiro giro', from: 0.27, to: 0.42, pos: 'right' },
-    { text: 'Acelera no silêncio.', sub: 'Do zero ao 80 em segundos', from: 0.44, to: 0.60, pos: 'left' },
+    { text: 'Acelera sem fazer barulho.', sub: 'Do zero a 60 em segundos', from: 0.44, to: 0.60, pos: 'left' },
     { text: 'Até 160 km de autonomia.', sub: 'Uma carga. A semana inteira', from: 0.62, to: 0.78, pos: 'right' },
     { text: 'A cidade é sua.', sub: 'Sem fila. Sem trânsito. Sem limites', from: 0.80, to: 0.93, pos: 'center' },
   ];
