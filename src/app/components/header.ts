@@ -51,6 +51,7 @@ import { contactLink } from '../data/contact';
     .menu .burger span:last-child { transform: translateY(-4px) rotate(-45deg); }
     @media (max-width: 820px) {
       .burger { display: block; }
+      .contact { padding: 9px 16px; font-size: .82rem; }
       nav { position: fixed; inset: var(--header-h) 0 auto 0; flex-direction: column; gap: 0; background: rgba(4, 9, 12, .96); backdrop-filter: blur(14px);
         padding: 8px 20px 24px; border-bottom: 1px solid var(--line); transform: translateY(-120%); opacity: 0; transition: transform .35s, opacity .35s; pointer-events: none;
         &.open { transform: none; opacity: 1; pointer-events: auto; }
