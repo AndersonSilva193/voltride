@@ -44,7 +44,7 @@ import { STORE_NAME, contactLink } from '../data/contact';
             <p class="desc">{{ p.description }}</p>
 
             <div class="opt">
-              <span class="label">Cor do neon: <b>{{ color().name }}</b></span>
+              <span class="label">Cor da bicicleta: <b>{{ color().name }}</b></span>
               <div class="swatches">
                 @for (c of p.colors; track c.name; let i = $index) {
                   <button [class.on]="colorIdx() === i" [style.--c]="c.hex" (click)="colorIdx.set(i)" [attr.aria-label]="c.name" [title]="c.name"></button>
@@ -57,8 +57,8 @@ import { STORE_NAME, contactLink } from '../data/contact';
             </div>
 
             <ul class="perks">
-              <li>🚚 Frete grátis para todo o Brasil</li>
-              <li>🛡️ Garantia de 3 anos</li>
+              <li>🚚 Consultar disponibilidade</li>
+              <li>🛡️ Garantia de 1 ano</li>
               <li>🔋 Bateria e carregador inclusos</li>
             </ul>
           </div>

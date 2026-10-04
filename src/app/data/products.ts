@@ -1,15 +1,10 @@
 import { Product, ProductColor } from '../models/product';
 
 const NEON: ProductColor[] = [
-  { name: 'Neon Esmeralda', hex: '#19e6a8', filter: 'none' },
-  { name: 'Neon Ártico', hex: '#19b8ff', filter: 'hue-rotate(-38deg) saturate(1.1)' },
-  { name: 'Neon Violeta', hex: '#a066ff', filter: 'hue-rotate(80deg) saturate(1.15)' },
+  { name: 'Verde', hex: '#19e6a8', filter: 'none' },
+  { name: 'Azul', hex: '#19b8ff', filter: 'hue-rotate(-38deg) saturate(1.1)' },
 ];
-const SUNSET: ProductColor[] = [
-  { name: 'Neon Esmeralda', hex: '#19e6a8', filter: 'none' },
-  { name: 'Neon Ártico', hex: '#19b8ff', filter: 'hue-rotate(-38deg) saturate(1.1)' },
-  { name: 'Neon Magenta', hex: '#ff3d9a', filter: 'hue-rotate(140deg) saturate(1.2)' },
-];
+const SUNSET: ProductColor[] = NEON;
 
 const IMG_A = 'media/start.jpg';
 const IMG_B = 'media/end.jpg';

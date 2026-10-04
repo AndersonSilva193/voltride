@@ -26,7 +26,7 @@ import { PRODUCTS } from '../data/products';
       <div class="container">
         <div appReveal class="head">
           <p class="eyebrow">Tecnologia</p>
-          <h2 class="section-title">Engenharia que <span class="grad-text">você sente</span>.</h2>
+          <h2 class="section-title">Motor e bateria <span class="grad-text">projetados para durar</span>.</h2>
         </div>
         <div class="features">
           @for (f of features; track f.title; let i = $index) {
@@ -121,9 +121,9 @@ export class Home {
 
   protected stats = [
     { value: '160 km', label: 'autonomia máxima' },
-    { value: '90 km/h', label: 'velocidade máxima' },
+    { value: '60 km/h', label: 'velocidade máxima' },
     { value: '0 g', label: 'de emissão de CO₂' },
-    { value: '4,9 ★', label: 'avaliação dos clientes' },
+    
   ];
 
   private sanitizer = inject(DomSanitizer);
@@ -141,15 +141,15 @@ export class Home {
       icon: this.icon('<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>') },
     { title: 'Painel conectado', text: 'Acompanhe velocidade, carga e localização direto no painel e no aplicativo.',
       icon: this.icon('<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>') },
-    { title: 'Garantia de 3 anos', text: 'Motor e bateria cobertos, com rede de assistência e peças originais.',
+    { title: 'Garantia de 1 ano', text: 'Motor e bateria cobertos, com rede de assistência e peças originais.',
       icon: this.icon('<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>') },
   ];
 
   protected faq = [
-    { q: 'Preciso de CNH para pilotar?', a: 'Depende da potência do modelo e da regulamentação local. Modelos de baixa potência podem ter regras mais simples; confira a categoria na página de cada produto. (Conteúdo demonstrativo.)' },
+    { q: 'Preciso de CNH para pilotar?', a: 'No geral não mas depende da potência do modelo e da regulamentação local. Modelos de baixa potência podem ter regras mais simples; confira a categoria na página de cada produto. (Conteúdo demonstrativo.)' },
     { q: 'Quanto tempo leva para carregar?', a: 'Entre 4 e 7 horas em tomada comum, dependendo da bateria. O Volt Pro com dupla bateria carrega em cerca de 4 horas.' },
     { q: 'Qual a autonomia real?', a: 'De 60 a 160 km por carga, de acordo com o modelo, peso e relevo. A frenagem regenerativa ajuda a estender esse número.' },
-    { q: 'Como funciona a entrega?', a: 'O frete é grátis para todo o Brasil e a moto chega montada, com bateria, carregador e documentação. Prazo médio de 7 a 15 dias úteis.' },
-    { q: 'Como compro ou peço um orçamento?', a: 'Clique em "Fale conosco" e converse direto com a Moto Peças pelo WhatsApp. Eles informam preços, condições de pagamento e disponibilidade.' },
+    { q: 'Como funciona a entrega?', a: 'Verificar disponibilidade de frete com a loja e a bicicleta chega montada, com bateria, carregador e documentação.' },
+    { q: 'Como compro ou peço um orçamento?', a: 'Clique em "Fale conosco" e converse direto com a gente pelo WhatsApp. Informaremos preços, condições de pagamento e disponibilidade.' },
   ];
 }

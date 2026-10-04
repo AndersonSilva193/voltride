@@ -25,12 +25,21 @@ type Sort = 'relevance' | 'price-asc' | 'price-desc' | 'range';
           }
         </div>
         <input class="search" type="search" placeholder="Buscar modelo…" aria-label="Buscar" (input)="query.set($any($event.target).value)" />
-        <select aria-label="Ordenar" (change)="sort.set($any($event.target).value)">
-          <option value="relevance">Relevância</option>
-          <option value="price-asc">Menor preço</option>
-          <option value="price-desc">Maior preço</option>
-          <option value="range">Maior autonomia</option>
-        </select>
+        <div class="dd" (focusout)="onFocusOut($event)" (keydown.escape)="open.set(false)">
+          <button type="button" class="dd-btn" aria-haspopup="listbox" [attr.aria-expanded]="open()" aria-label="Ordenar" (click)="open.set(!open())">
+            <span>{{ sortLabel() }}</span>
+            <svg [class.up]="open()" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+          </button>
+          @if (open()) {
+            <ul class="dd-menu" role="listbox">
+              @for (o of sortOptions; track o.id) {
+                <li role="option" [attr.aria-selected]="sort() === o.id">
+                  <button type="button" [class.on]="sort() === o.id" (click)="pick(o.id)">{{ o.label }}</button>
+                </li>
+              }
+            </ul>
+          }
+        </div>
       </div>
 
       <p class="count">{{ list().length }} {{ list().length === 1 ? 'modelo' : 'modelos' }}</p>
@@ -57,18 +66,43 @@ type Sort = 'relevance' | 'price-asc' | 'price-desc' | 'range';
     .chips { display: flex; gap: 8px; flex-wrap: wrap; flex: 1;
       button { padding: 10px 20px; border-radius: 99px; border: 1px solid var(--line); background: transparent; transition: all .25s;
         &:hover { border-color: var(--green); } &.on { background: var(--grad); color: #00130d; border-color: transparent; font-weight: 600; } } }
-    .search { width: 220px; } select { width: 190px; }
+    .search { width: 220px; }
+    .dd { position: relative; width: 190px; }
+    .dd-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 13px 15px; border-radius: 12px; border: 1px solid var(--line);
+      background: var(--bg-2); color: var(--text); font: inherit; cursor: pointer; transition: border-color .2s, box-shadow .2s;
+      &:hover, &[aria-expanded='true'] { border-color: var(--green); } &[aria-expanded='true'] { box-shadow: 0 0 0 3px rgba(25, 230, 168, .15); }
+      svg { color: var(--green); transition: transform .25s; &.up { transform: rotate(180deg); } } }
+    .dd-menu { position: absolute; top: calc(100% + 8px); left: 0; right: 0; z-index: 20; list-style: none; margin: 0; padding: 6px; border-radius: 14px;
+      border: 1px solid var(--line); background: var(--surface); box-shadow: 0 18px 40px -12px rgba(0, 0, 0, .7), 0 0 24px -10px var(--green); animation: dd-in .18s ease-out;
+      button { width: 100%; text-align: left; padding: 10px 12px; border: 0; border-radius: 9px; background: transparent; color: var(--text); font: inherit; cursor: pointer; transition: background .15s;
+        &:hover { background: var(--surface-2); } &.on { background: var(--grad); color: #00130d; font-weight: 600; } } }
+    @keyframes dd-in { from { opacity: 0; transform: translateY(-6px); } }
     .count { color: var(--muted); margin-bottom: 22px; font-size: .9rem; }
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
     .empty { padding: 60px; text-align: center; display: grid; gap: 20px; justify-items: center; color: var(--muted); }
     @media (max-width: 960px) { .grid { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } .search, select { width: 100%; } }
+    @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } .search, .dd { width: 100%; } }
   `,
 })
 export class Shop {
   protected category = signal('todas');
   protected query = signal('');
   protected sort = signal<Sort>('relevance');
+
+  protected open = signal(false);
+  protected sortOptions: { id: Sort; label: string }[] = [
+    { id: 'relevance', label: 'Relevância' },
+    { id: 'price-asc', label: 'Menor preço' },
+    { id: 'price-desc', label: 'Maior preço' },
+    { id: 'range', label: 'Maior autonomia' },
+  ];
+  protected sortLabel = computed(() => this.sortOptions.find((o) => o.id === this.sort())!.label);
+
+  protected pick(id: Sort) { this.sort.set(id); this.open.set(false); }
+  protected onFocusOut(e: FocusEvent) {
+    const root = e.currentTarget as HTMLElement;
+    if (!root.contains(e.relatedTarget as Node | null)) this.open.set(false);
+  }
 
   protected categories = [
     { id: 'todas', label: 'Todas' },
