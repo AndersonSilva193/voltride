@@ -1,4 +1,4 @@
-export type Category = 'urbana' | 'cargo' | 'performance';
+export type Category = 'urbana' | 'performance';
 
 export interface ProductColor {
   name: string;
@@ -15,19 +15,20 @@ export interface Product {
   price: number;
   oldPrice?: number;
   badge?: string;
-  rating: number;
-  reviews: number;
+  rating?: number;
+  reviews?: number;
   images: string[];
   focus: string;
   description: string;
   colors: ProductColor[];
   specs: {
     range: number;
-    topSpeed: number;
     power: number;
-    battery: string;
-    charge: string;
-    weight: number;
-    load: number;
+    /** Campos abaixo só aparecem quando informados. */
+    topSpeed?: number;
+    battery?: string;
+    charge?: string;
+    weight?: number;
+    load?: number;
   };
 }

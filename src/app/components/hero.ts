@@ -50,7 +50,7 @@ interface Phrase {
           <h2>Escolha a <span class="grad-text">sua</span>.</h2>
           <div class="cta">
             <a class="btn btn-primary" routerLink="/loja">Ver todas as motos</a>
-            <a class="btn btn-ghost" routerLink="/produto/volt-one">Conhecer a Volt One</a>
+            <a class="btn btn-ghost" routerLink="/produto/capuccino-1000w">Conhecer a Capuccino</a>
           </div>
         </div>
 

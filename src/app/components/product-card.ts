@@ -14,14 +14,14 @@ import { STORE_NAME, contactLink } from '../data/contact';
         @if (product().badge) { <span class="badge">{{ product().badge }}</span> }
         <div class="hover-specs">
           <span><b>{{ product().specs.range }}</b> km</span>
-          <span><b>{{ product().specs.topSpeed }}</b> km/h</span>
+          @if (product().specs.topSpeed) { <span><b>{{ product().specs.topSpeed }}</b> km/h</span> }
           <span><b>{{ product().specs.power }}</b> W</span>
         </div>
       </a>
       <div class="body">
         <div class="top">
           <h3><a [routerLink]="['/produto', product().id]">{{ product().name }}</a></h3>
-          <span class="rate">★ {{ product().rating.toFixed(1) }} <small>({{ product().reviews }})</small></span>
+          @if (product().rating; as r) { <span class="rate">★ {{ r.toFixed(1) }} <small>({{ product().reviews }})</small></span> }
         </div>
         <p class="tag">{{ product().tagline }}</p>
         <div class="foot">

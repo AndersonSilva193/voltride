@@ -17,23 +17,25 @@ import { STORE_NAME, contactLink } from '../data/contact';
         <div class="layout">
           <div class="gallery">
             <div class="main card">
-              <img [src]="p.images[img()]" [alt]="p.name" [style.filter]="color().filter" [style.object-position]="img() === 0 ? p.focus : '50% 60%'" />
+              <img [src]="p.images[img()]" [alt]="p.name" [style.filter]="color().filter" [style.object-position]="p.focus" />
               @if (p.badge) { <span class="badge">{{ p.badge }}</span> }
             </div>
-            <div class="thumbs">
-              @for (src of p.images; track $index) {
-                <button [class.on]="img() === $index" (click)="img.set($index)" [attr.aria-label]="'Foto ' + ($index + 1)">
-                  <img [src]="src" alt="" [style.filter]="color().filter" />
-                </button>
-              }
-            </div>
+            @if (p.images.length > 1) {
+              <div class="thumbs">
+                @for (src of p.images; track $index) {
+                  <button [class.on]="img() === $index" (click)="img.set($index)" [attr.aria-label]="'Foto ' + ($index + 1)">
+                    <img [src]="src" alt="" [style.filter]="color().filter" />
+                  </button>
+                }
+              </div>
+            }
           </div>
 
           <div class="info">
             <p class="eyebrow">{{ p.category }}</p>
             <h1>{{ p.name }}</h1>
             <p class="tag">{{ p.tagline }}</p>
-            <p class="rate">★ {{ p.rating.toFixed(1) }} <small>· {{ p.reviews }} avaliações</small></p>
+            @if (p.rating; as r) { <p class="rate">★ {{ r.toFixed(1) }} <small>· {{ p.reviews }} avaliações</small></p> }
 
             <div class="price">
               @if (p.oldPrice) { <s>{{ p.oldPrice | currency: 'BRL' }}</s> }
@@ -67,13 +69,13 @@ import { STORE_NAME, contactLink } from '../data/contact';
         <div class="specs card">
           <h2>Especificações</h2>
           <dl>
-            <div><dt>Autonomia</dt><dd>{{ p.specs.range }} km</dd></div>
-            <div><dt>Velocidade máxima</dt><dd>{{ p.specs.topSpeed }} km/h</dd></div>
+            <div><dt>Autonomia</dt><dd>até {{ p.specs.range }} km</dd></div>
             <div><dt>Potência</dt><dd>{{ p.specs.power }} W</dd></div>
-            <div><dt>Bateria</dt><dd>{{ p.specs.battery }}</dd></div>
-            <div><dt>Tempo de recarga</dt><dd>{{ p.specs.charge }}</dd></div>
-            <div><dt>Peso</dt><dd>{{ p.specs.weight }} kg</dd></div>
-            <div><dt>Carga máxima</dt><dd>{{ p.specs.load }} kg</dd></div>
+            @if (p.specs.topSpeed) { <div><dt>Velocidade máxima</dt><dd>{{ p.specs.topSpeed }} km/h</dd></div> }
+            @if (p.specs.battery) { <div><dt>Bateria</dt><dd>{{ p.specs.battery }}</dd></div> }
+            @if (p.specs.charge) { <div><dt>Tempo de recarga</dt><dd>{{ p.specs.charge }}</dd></div> }
+            @if (p.specs.weight) { <div><dt>Peso</dt><dd>{{ p.specs.weight }} kg</dd></div> }
+            @if (p.specs.load) { <div><dt>Carga máxima</dt><dd>{{ p.specs.load }} kg</dd></div> }
           </dl>
         </div>
 

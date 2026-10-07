@@ -147,8 +147,8 @@ export class Home {
 
   protected faq = [
     { q: 'Preciso de CNH para pilotar?', a: 'No geral não mas depende da potência do modelo e da regulamentação local. Modelos de baixa potência podem ter regras mais simples; confira a categoria na página de cada produto. (Conteúdo demonstrativo.)' },
-    { q: 'Quanto tempo leva para carregar?', a: 'Entre 4 e 7 horas em tomada comum, dependendo da bateria. O Volt Pro com dupla bateria carrega em cerca de 4 horas.' },
-    { q: 'Qual a autonomia real?', a: 'De 60 a 160 km por carga, de acordo com o modelo, peso e relevo. A frenagem regenerativa ajuda a estender esse número.' },
+    { q: 'Quanto tempo leva para carregar?', a: 'A recarga é feita em tomada comum e o tempo varia conforme a bateria de cada modelo. Fale com a gente para saber o tempo de recarga do modelo que você escolher.' },
+    { q: 'Qual a autonomia real?', a: 'De 45 a 60 km por carga (aproximadamente), de acordo com o modelo, o peso transportado e o relevo do trajeto.' },
     { q: 'Como funciona a entrega?', a: 'Verificar disponibilidade de frete com a loja e a bicicleta chega montada, com bateria, carregador e documentação.' },
     { q: 'Como compro ou peço um orçamento?', a: 'Clique em "Fale conosco" e converse direto com a gente pelo WhatsApp. Informaremos preços, condições de pagamento e disponibilidade.' },
   ];

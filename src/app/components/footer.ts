@@ -14,8 +14,8 @@ import { RouterLink } from '@angular/router';
         <div>
           <h4>Loja</h4>
           <a routerLink="/loja">Todas as motos</a>
-          <a routerLink="/produto/volt-one">Volt One</a>
-          <a routerLink="/produto/volt-pro">Volt Pro</a>
+          <a routerLink="/produto/dropp-joy-city">Dropp Joy City</a>
+          <a routerLink="/produto/capuccino-1000w">Capuccino 1000W</a>
         </div>
         <div>
           <h4>Empresa</h4>
