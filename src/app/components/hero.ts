@@ -160,9 +160,14 @@ export class Hero implements AfterViewInit, OnDestroy {
   private raf = 0;
   private duration = 0;
   private lastSet = -1;
+  /** true enquanto um seek está em voo: evita empilhar seeks e travar o decoder. */
+  private seeking = false;
+  private seekStart = 0;
+  private onSeeked = () => { this.seeking = false; this.pump(); };
 
   ngAfterViewInit() {
     const v = this.video().nativeElement;
+    v.addEventListener('seeked', this.onSeeked);
     const onMeta = () => {
       this.duration = v.duration || 0;
       // "destrava" o vídeo em browsers que exigem um play() antes de permitir seek.
@@ -174,7 +179,10 @@ export class Hero implements AfterViewInit, OnDestroy {
     this.read();
   }
 
-  ngOnDestroy() { cancelAnimationFrame(this.raf); }
+  ngOnDestroy() {
+    cancelAnimationFrame(this.raf);
+    this.video().nativeElement.removeEventListener('seeked', this.onSeeked);
+  }
 
   @HostListener('window:scroll')
   @HostListener('window:resize')
@@ -200,11 +208,27 @@ export class Hero implements AfterViewInit, OnDestroy {
     this.progress.set(Math.round(this.current * 1000) / 1000);
     this.stage().nativeElement.style.setProperty('--p', this.current.toFixed(4));
 
-    const v = this.video().nativeElement;
-    if (this.duration) {
-      const t = this.current * (this.duration - 0.04);
-      if (Math.abs(t - this.lastSet) > 1 / 60) { v.currentTime = t; this.lastSet = t; }
-    }
-    if (this.current !== this.target) this.raf = requestAnimationFrame(() => this.tick());
+    this.pump();
+    // continua o loop enquanto o scroll não alcançou o alvo ou o vídeo ainda deve seguir
+    if (this.current !== this.target || this.pending()) this.raf = requestAnimationFrame(() => this.tick());
+  }
+
+  /** tempo do vídeo correspondente à posição atual do scroll. */
+  private time() { return this.current * (this.duration - 0.04); }
+
+  private pending() { return this.duration > 0 && Math.abs(this.time() - this.lastSet) > 1 / 48; }
+
+  /**
+   * Pede no máximo um seek por vez. O próximo só sai quando o anterior terminou
+   * (evento `seeked`), então o vídeo acompanha o decoder em vez de engasgar.
+   */
+  private pump() {
+    // alguns browsers (Safari) engolem o `seeked`: solta o seek travado depois de 400ms.
+    if (this.seeking && performance.now() - this.seekStart < 400) return;
+    if (!this.pending()) return;
+    this.seeking = true;
+    this.seekStart = performance.now();
+    this.lastSet = this.time();
+    this.video().nativeElement.currentTime = this.lastSet;
   }
 }

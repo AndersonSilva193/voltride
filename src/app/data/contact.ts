@@ -1,4 +1,4 @@
-export const STORE_NAME = 'Moto Peças';
+export const STORE_NAME = 'Loja Exemplo';
 
 /** Número do WhatsApp da loja (DDI + DDD + número, só dígitos). */
 export const STORE_WHATSAPP = '5541984018011';
