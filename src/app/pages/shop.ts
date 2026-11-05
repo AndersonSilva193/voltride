@@ -65,17 +65,17 @@ type Sort = 'relevance' | 'price-asc' | 'price-desc' | 'range';
     .toolbar { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
     .chips { display: flex; gap: 8px; flex-wrap: wrap; flex: 1;
       button { padding: 10px 20px; border-radius: 99px; border: 1px solid var(--line); background: transparent; transition: all .25s;
-        &:hover { border-color: var(--green); } &.on { background: var(--grad); color: #00130d; border-color: transparent; font-weight: 600; } } }
+        &:hover { border-color: var(--green); } &.on { background: var(--grad); color: #17191b; border-color: transparent; font-weight: 600; } } }
     .search { width: 220px; }
     .dd { position: relative; width: 190px; }
     .dd-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 13px 15px; border-radius: 12px; border: 1px solid var(--line);
       background: var(--bg-2); color: var(--text); font: inherit; cursor: pointer; transition: border-color .2s, box-shadow .2s;
-      &:hover, &[aria-expanded='true'] { border-color: var(--green); } &[aria-expanded='true'] { box-shadow: 0 0 0 3px rgba(25, 230, 168, .15); }
+      &:hover, &[aria-expanded='true'] { border-color: var(--green); } &[aria-expanded='true'] { box-shadow: 0 0 0 3px rgba(242, 196, 0, .15); }
       svg { color: var(--green); transition: transform .25s; &.up { transform: rotate(180deg); } } }
     .dd-menu { position: absolute; top: calc(100% + 8px); left: 0; right: 0; z-index: 20; list-style: none; margin: 0; padding: 6px; border-radius: 14px;
       border: 1px solid var(--line); background: var(--surface); box-shadow: 0 18px 40px -12px rgba(0, 0, 0, .7), 0 0 24px -10px var(--green); animation: dd-in .18s ease-out;
       button { width: 100%; text-align: left; padding: 10px 12px; border: 0; border-radius: 9px; background: transparent; color: var(--text); font: inherit; cursor: pointer; transition: background .15s;
-        &:hover { background: var(--surface-2); } &.on { background: var(--grad); color: #00130d; font-weight: 600; } } }
+        &:hover { background: var(--surface-2); } &.on { background: var(--grad); color: #17191b; font-weight: 600; } } }
     @keyframes dd-in { from { opacity: 0; transform: translateY(-6px); } }
     .count { color: var(--muted); margin-bottom: 22px; font-size: .9rem; }
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }

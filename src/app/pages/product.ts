@@ -97,7 +97,7 @@ import { STORE_NAME, contactLink } from '../data/contact';
     .layout { display: grid; grid-template-columns: 1.15fr 1fr; gap: 54px; align-items: start; }
     .gallery { position: sticky; top: calc(var(--header-h) + 20px); }
     .main { position: relative; overflow: hidden; aspect-ratio: 4 / 3; img { width: 100%; height: 100%; object-fit: cover; transition: filter .5s; } }
-    .badge { position: absolute; top: 18px; left: 18px; padding: 6px 14px; border-radius: 99px; font-size: .75rem; font-weight: 700; background: var(--green); color: #00130d; }
+    .badge { position: absolute; top: 18px; left: 18px; padding: 6px 14px; border-radius: 99px; font-size: .75rem; font-weight: 700; background: var(--green); color: #17191b; }
     .thumbs { display: flex; gap: 12px; margin-top: 14px;
       button { width: 92px; aspect-ratio: 4 / 3; padding: 0; border-radius: 12px; overflow: hidden; border: 2px solid var(--line); background: none; opacity: .6; transition: all .25s;
         &.on, &:hover { opacity: 1; border-color: var(--green); } img { width: 100%; height: 100%; object-fit: cover; } } }

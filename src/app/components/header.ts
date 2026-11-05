@@ -11,7 +11,7 @@ import { contactLink } from '../data/contact';
         <a routerLink="/" class="logo" aria-label="Voltride — início" (click)="menu.set(false)">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="url(#g)" />
-            <defs><linearGradient id="g" x1="4" y1="2" x2="18" y2="22"><stop stop-color="#19e6a8" /><stop offset="1" stop-color="#19b8ff" /></linearGradient></defs>
+            <defs><linearGradient id="g" x1="4" y1="2" x2="18" y2="22"><stop stop-color="#F2C400" /><stop offset="1" stop-color="#F2C400" /></linearGradient></defs>
           </svg>
           <span>VOLT<b>RIDE</b></span>
         </a>
@@ -36,7 +36,7 @@ import { contactLink } from '../data/contact';
     header {
       position: fixed; inset: 0 0 auto 0; z-index: 100; height: var(--header-h);
       transition: background .35s, border-color .35s, backdrop-filter .35s; border-bottom: 1px solid transparent;
-      &.solid, &.menu { background: rgba(4, 9, 12, .82); backdrop-filter: blur(14px); border-color: var(--line); }
+      &.solid, &.menu { background: rgba(18, 20, 22, .82); backdrop-filter: blur(14px); border-color: var(--line); }
     }
     .bar { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
     .logo { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; letter-spacing: .18em; font-size: 1.05rem; b { color: var(--green); font-weight: 700; } }
@@ -52,7 +52,7 @@ import { contactLink } from '../data/contact';
     @media (max-width: 820px) {
       .burger { display: block; }
       .contact { padding: 9px 16px; font-size: .82rem; }
-      nav { position: fixed; inset: var(--header-h) 0 auto 0; flex-direction: column; gap: 0; background: rgba(4, 9, 12, .96); backdrop-filter: blur(14px);
+      nav { position: fixed; inset: var(--header-h) 0 auto 0; flex-direction: column; gap: 0; background: rgba(18, 20, 22, .96); backdrop-filter: blur(14px);
         padding: 8px 20px 24px; border-bottom: 1px solid var(--line); transform: translateY(-120%); opacity: 0; transition: transform .35s, opacity .35s; pointer-events: none;
         &.open { transform: none; opacity: 1; pointer-events: auto; }
         a { padding: 16px 0; font-size: 1.1rem; border-bottom: 1px solid var(--line); } }
