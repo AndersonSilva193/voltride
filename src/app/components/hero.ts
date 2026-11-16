@@ -144,7 +144,7 @@ export class Hero implements AfterViewInit, OnDestroy {
     { text: 'Zero emissão.', sub: 'Nenhum ruído. Nenhuma fumaça.', from: 0.10, to: 0.25, pos: 'left' },
     { text: '100% elétrica.', sub: 'Torque instantâneo desde o primeiro giro', from: 0.27, to: 0.42, pos: 'right' },
     { text: 'Acelera sem fazer barulho.', sub: 'Do zero a 60 em segundos', from: 0.44, to: 0.60, pos: 'left' },
-    { text: 'Até 160 km de autonomia.', sub: 'Uma carga. A semana inteira', from: 0.62, to: 0.78, pos: 'right' },
+    { text: 'Até 60 km de autonomia.', sub: '45 a 60 km conforme o modelo', from: 0.62, to: 0.78, pos: 'right' },
     { text: 'A cidade é sua.', sub: 'Sem fila. Sem trânsito. Sem limites', from: 0.80, to: 0.93, pos: 'center' },
   ];
 

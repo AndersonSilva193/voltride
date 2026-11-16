@@ -120,7 +120,7 @@ export class Home {
   protected featured = PRODUCTS.slice(0, 3);
 
   protected stats = [
-    { value: '160 km', label: 'autonomia máxima' },
+    { value: '60 km', label: 'autonomia máxima' },
     { value: '60 km/h', label: 'velocidade máxima' },
     { value: '0 g', label: 'de emissão de CO₂' },
     
