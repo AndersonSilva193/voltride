@@ -42,3 +42,6 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# fonte do vídeo do hero (9 MB): reexportável do Higgsfield, ver docs/asset-manifest.json
+assets-src/hero/source-day.mp4

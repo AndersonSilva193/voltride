@@ -2,766 +2,734 @@ import {
   AfterViewInit,
   Component,
   ElementRef,
-  HostListener,
   OnDestroy,
-  computed,
   signal,
   viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import {
+  DAY_STOPS,
+  FRAME_SETS,
+  FrameSet,
+  MAP_STREETS,
+  MODEL_ID,
+  MODEL_NAME,
+  MODEL_RANGE_KM,
+  ROUTE_POINTS,
+  STOP_POINT,
+  frameUrl,
+} from '../data/day';
+import { FrameScrub } from '../lib/frame-scrub';
 
-interface Phrase {
-  text: string;
-  sub: string;
-  from: number;
-  to: number;
-  pos: 'left' | 'right' | 'center';
+gsap.registerPlugin(ScrollTrigger);
+
+/** Progresso do scroll em que o dia chega a cada parada. */
+const AT = [0.1, 0.26, 0.42, 0.58, 0.74, 0.88];
+const DAY_START = DAY_STOPS[0].min;
+const DAY_END = DAY_STOPS[DAY_STOPS.length - 1].min;
+/**
+ * O vídeo liga o cabo na tomada por volta de 62% da duração. Até a última parada fora de casa
+ * (feira) usamos só a parte do dia sem cabo; o trecho final (feira → casa) mostra o plugue e o farol.
+ */
+const PLUG_AT = 0.6;
+const LAST_OUT = DAY_STOPS[DAY_STOPS.length - 2].min;
+function videoAt(min: number) {
+  const t = (min - DAY_START) / (LAST_OUT - DAY_START);
+  if (t <= 1) return t * PLUG_AT;
+  return PLUG_AT + ((min - LAST_OUT) / (DAY_END - LAST_OUT)) * (1 - PLUG_AT);
 }
 
-/**
- * Hero com "scroll scrubbing": a section é mais alta que a viewport e o palco
- * fica fixo (sticky) enquanto o scroll controla o `currentTime` do vídeo.
- * Na prática, a página fica "travada" na moto durante todo o percurso.
- */
+const seg = ROUTE_POINTS.slice(1).map(([x, y], i) => {
+  const [px, py] = ROUTE_POINTS[i];
+  return Math.abs(x - px) + Math.abs(y - py);
+});
+const cum = seg.reduce<number[]>((acc, l) => [...acc, acc[acc.length - 1] + l], [0]);
+const ROUTE_LEN = cum[cum.length - 1];
+const STOP_LEN = STOP_POINT.map((p) => cum[p]);
+
+const hhmm = (min: number) => {
+  const m = Math.round(min);
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+};
+const kmText = (km: number) => km.toFixed(1).replace('.', ',');
+const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+
+function pointAt(len: number): [number, number] {
+  let i = cum.findIndex((c) => c >= len) - 1;
+  if (i < 0) i = 0;
+  const [x0, y0] = ROUTE_POINTS[i];
+  const [x1, y1] = ROUTE_POINTS[i + 1] ?? ROUTE_POINTS[i];
+  const f = seg[i] ? (len - cum[i]) / seg[i] : 0;
+  return [x0 + (x1 - x0) * f, y0 + (y1 - y0) * f];
+}
+
+/** Estado do dia para um progresso de scroll 0..1. */
+function dayAt(p: number) {
+  if (p <= AT[0]) return { min: DAY_START, km: 0, len: 0 };
+  const last = AT.length - 1;
+  if (p >= AT[last]) {
+    const s = DAY_STOPS[last];
+    return { min: s.min, km: s.km, len: ROUTE_LEN };
+  }
+  const i = AT.findIndex((a) => a > p) - 1;
+  const f = gsap.parseEase('power1.inOut')((p - AT[i]) / (AT[i + 1] - AT[i]));
+  const a = DAY_STOPS[i];
+  const b = DAY_STOPS[i + 1];
+  return {
+    min: a.min + (b.min - a.min) * f,
+    km: a.km + (b.km - a.km) * f,
+    len: STOP_LEN[i] + (STOP_LEN[i + 1] - STOP_LEN[i]) * f,
+  };
+}
+
 @Component({
   selector: 'app-hero',
   imports: [RouterLink],
+  host: { '[class.static]': 'still()' },
   template: `
-    <section class="track" #track>
+    <section class="dia" #section aria-labelledby="dia-title">
       <div class="stage" #stage>
-        <video
-          #video
-          muted
-          playsinline
-          preload="none"
-          poster="media/start-1280.webp"
-          (error)="failed.set(true)"
-        ></video>
-        @if (failed()) {
+        <div class="frame">
           <img
-            class="fb"
-            src="media/start-1280.webp"
-            srcset="media/start-640.webp 640w, media/start-1280.webp 1280w"
+            class="poster"
+            src="media/hero/poster-1600.webp"
+            srcset="media/hero/poster-800.webp 800w, media/hero/poster-1600.webp 1600w"
             sizes="100vw"
-            width="1280"
-            height="728"
-            alt=""
+            width="1600"
+            height="900"
+            fetchpriority="high"
+            alt="Scooter Capuccino creme estacionada na calçada, em frente a um muro azul, às 7h30"
           />
-          <img
-            class="fb"
-            src="media/end-1280.webp"
-            srcset="media/end-640.webp 640w, media/end-1280.webp 1280w"
-            sizes="100vw"
-            width="1280"
-            height="728"
-            alt=""
-            [style.opacity]="progress()"
-          />
-        }
-        <div class="shade"></div>
-        <div class="streaks"></div>
-
-        <!-- intro -->
-        <div class="intro" [class.gone]="progress() > 0.05">
-          <h1>VOLT<span class="grad-text">RIDE</span></h1>
-          <p class="lead">Mobilidade elétrica para os caminhos da cidade.</p>
-          <div class="hint" aria-hidden="true"><i></i><span>Role para explorar</span></div>
+          @if (failed()) {
+            <img
+              #endPoster
+              class="poster end"
+              src="media/hero/end-1600.webp"
+              srcset="media/hero/end-800.webp 800w, media/hero/end-1600.webp 1600w"
+              sizes="100vw"
+              width="1600"
+              height="900"
+              alt=""
+            />
+          }
+          <canvas #canvas aria-hidden="true"></canvas>
         </div>
 
-        <!-- frases durante o percurso -->
-        @for (p of phrases; track p.text; let i = $index) {
-          <div
-            class="phrase {{ p.pos }}"
-            [class.on]="active() === i"
-            [class.past]="active() !== i && i < reached()"
-          >
-            <h2>
-              <span>{{ p.text }}</span>
-            </h2>
-            <p>{{ p.sub }}</p>
-          </div>
-        }
-
-        <!-- final -->
-        <div
-          class="outro"
-          [class.on]="progress() > 0.94"
-          [attr.inert]="progress() > 0.94 ? null : ''"
-        >
-          <h2>Explore os modelos</h2>
+        <div class="slot">
+        <div class="intro" [class.gone]="introGone()" [attr.inert]="introGone() ? '' : null">
+          <h1 id="dia-title">
+            Um dia inteiro de bairro.
+            <span>Uma carga.</span>
+          </h1>
+          <p>Role a página e passe o dia com a {{ model }}.</p>
           <div class="cta">
-            <a class="btn btn-primary" routerLink="/loja">Ver catálogo</a>
-            <a class="btn btn-ghost" routerLink="/produto/capuccino-1000w">Conhecer Capuccino</a>
+            <a class="btn btn-placa" routerLink="/loja">Ver os modelos</a>
+            @if (!still()) {
+              <button class="btn btn-linha" type="button" (click)="skip()">Pular o dia</button>
+            }
           </div>
         </div>
 
-        <!-- HUD -->
-        <div class="hud" [class.on]="progress() > 0.03 && progress() < 0.97" aria-hidden="true">
-          <div class="speed"><span>Exploração</span></div>
-          <div class="bar"><i></i></div>
+        <ol class="beats" aria-label="Roteiro do dia, ilustrativo">
+          @for (s of stops; track s.id; let i = $index) {
+            <li [class.on]="beat() === i" [class.past]="beat() > i">
+              <span class="when mono">{{ time(s.min) }} · {{ s.place }}</span>
+              <strong>{{ s.line }}</strong>
+            </li>
+          }
+        </ol>
+
+        <div class="outro" [class.on]="ended()" [attr.inert]="ended() ? null : ''">
+          <h2>
+            {{ dayKm }} km no dia.
+            <span>Sobra bateria.</span>
+          </h2>
+          <p>
+            A {{ model }} tem {{ range }} km de autonomia de referência. Dá para fazer o roteiro
+            ilustrativo e ainda ter carga.
+          </p>
+          <div class="cta">
+            <a class="btn btn-placa" routerLink="/loja">Ver os 7 modelos</a>
+            <a class="btn btn-linha" [routerLink]="['/produto', modelId]">Conhecer a {{ model }}</a>
+          </div>
         </div>
-        @if (progress() < 0.9) {
-          <button class="skip" (click)="skip()">Pular animação</button>
-        }
+        </div>
+
+        <aside class="guia" aria-label="Painel do trajeto">
+          <div class="clock placa mono" #clock aria-hidden="true">07:30</div>
+          <svg class="map" viewBox="0 0 320 200" aria-hidden="true">
+            <rect width="320" height="200" class="land" />
+            <rect x="170" y="140" width="80" height="45" class="park" />
+            <path [attr.d]="streets" class="street" />
+            <polyline [attr.points]="routePts" class="route-base" />
+            <polyline
+              #route
+              [attr.points]="routePts"
+              class="route"
+              [attr.stroke-dasharray]="routeLen"
+              [attr.stroke-dashoffset]="routeLen"
+            />
+            @for (s of stops; track s.id; let i = $index) {
+              @if (i < stops.length - 1) {
+                <circle [attr.cx]="s.x" [attr.cy]="s.y" r="6" class="stop" [class.hit]="beat() >= i" />
+              }
+            }
+            <g #marker class="marker" transform="translate(40 160)">
+              <circle r="9" />
+              <circle r="4" class="dot" />
+            </g>
+          </svg>
+          <div class="read">
+            <div>
+              <span class="lbl">Rodado</span>
+              <b class="mono"><span #km>0,0</span> km</b>
+            </div>
+            <div class="batt">
+              <span class="lbl">Bateria</span>
+              <i><b #batt></b></i>
+            </div>
+          </div>
+          <p class="note">Trajeto ilustrativo. Autonomia de referência: {{ range }} km.</p>
+        </aside>
       </div>
     </section>
   `,
   styles: `
+    @mixin flow {
+      .stage {
+        display: flex;
+        flex-direction: column;
+        padding-top: var(--header-h);
+      }
+      .frame {
+        position: relative;
+        inset: auto;
+        flex: none;
+        aspect-ratio: 16 / 9;
+        width: 100%;
+      }
+      /* Coluna: vídeo, área de texto (ocupa o que sobra), painel. Nada se sobrepõe. */
+      .slot {
+        display: block;
+        position: relative;
+        flex: 1 1 auto;
+        min-height: 0;
+        margin: 18px 20px 0;
+      }
+      .intro,
+      .outro,
+      .beats {
+        inset: 0 0 auto 0;
+        width: auto;
+        max-width: none;
+      }
+      .intro h1,
+      .outro h2 {
+        font-size: clamp(1.9rem, 8.6vw, 2.8rem);
+      }
+      .beats strong {
+        font-size: clamp(1.9rem, 9vw, 3rem);
+      }
+      .guia {
+        position: relative;
+        inset: auto;
+        flex: none;
+        width: auto;
+        margin: 10px 20px 14px;
+        grid-template-columns: auto 1fr;
+        .map {
+          display: none;
+        }
+        .read {
+          grid-template-columns: auto 1fr;
+        }
+      }
+    }
+
     :host {
       display: block;
     }
-    .track {
-      position: relative;
-      height: 650vh;
-      background: var(--bg);
-    }
     .stage {
-      position: sticky;
-      top: 0;
+      position: relative;
       height: 100vh;
       height: 100svh;
       overflow: hidden;
-      --p: 0;
+      background: var(--paper);
     }
-    video,
-    .fb {
+    .frame {
+      position: absolute;
+      inset: 0;
+      background: #a9c3d6;
+      overflow: hidden;
+    }
+    .poster,
+    canvas {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: 50% 62%;
-      --edge-feather: 9%;
-      -webkit-mask-image:
-        linear-gradient(
-          90deg,
-          transparent 0,
-          #000 var(--edge-feather),
-          #000 calc(100% - var(--edge-feather)),
-          transparent 100%
-        ),
-        linear-gradient(
-          0deg,
-          transparent 0,
-          #000 var(--edge-feather),
-          #000 calc(100% - var(--edge-feather)),
-          transparent 100%
-        );
-      -webkit-mask-composite: source-in;
-      mask-image:
-        linear-gradient(
-          90deg,
-          transparent 0,
-          #000 var(--edge-feather),
-          #000 calc(100% - var(--edge-feather)),
-          transparent 100%
-        ),
-        linear-gradient(
-          0deg,
-          transparent 0,
-          #000 var(--edge-feather),
-          #000 calc(100% - var(--edge-feather)),
-          transparent 100%
-        );
-      mask-composite: intersect;
+      object-position: 70% 50%;
     }
-    .shade {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background:
-        radial-gradient(
-          120% 90% at 50% 45%,
-          transparent 35%,
-          rgba(2, 6, 8, calc(0.55 + var(--p) * 0.25)) 100%
-        ),
-        linear-gradient(
-          180deg,
-          rgba(4, 9, 12, 0.75),
-          transparent 28%,
-          transparent 62%,
-          rgba(4, 9, 12, 0.85)
-        );
-    }
-    .streaks {
-      display: none;
-      position: absolute;
-      inset: -10% 0;
-      pointer-events: none;
-      mix-blend-mode: screen;
-      opacity: calc(clamp(0, (var(--p) - 0.08) * 4, 1) * 0.5);
-      background:
-        repeating-linear-gradient(
-          0deg,
-          transparent 0 46px,
-          rgba(25, 230, 168, 0.1) 47px,
-          transparent 49px 95px
-        ),
-        repeating-linear-gradient(
-          0deg,
-          transparent 0 130px,
-          rgba(25, 184, 255, 0.12) 132px,
-          transparent 134px 210px
-        );
-      background-size:
-        600px 100%,
-        900px 100%;
-      animation: streak 0.5s linear infinite;
-      mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
-    }
-    @keyframes streak {
-      to {
-        background-position:
-          -600px 0,
-          -900px 0;
-      }
+    .end {
+      opacity: 0;
     }
 
-    .intro {
+    .intro,
+    .outro {
       position: absolute;
-      inset: 0;
+      left: max(20px, calc((100vw - 1240px) / 2));
+      top: calc(var(--header-h) + 9vh);
+      width: min(44vw, 640px);
       display: grid;
-      place-content: center;
-      justify-items: center;
-      text-align: center;
-      gap: 16px;
-      padding: 0 20px;
+      gap: 18px;
+      justify-items: start;
+    }
+    .intro {
       transition:
-        opacity 0.6s,
-        transform 0.6s,
-        filter 0.6s;
-      h1 {
-        font-size: clamp(3rem, 10vw, 6rem);
-        font-weight: 900;
-        letter-spacing: 0.08em;
-      }
-      .lead {
-        color: var(--text);
-        font-size: clamp(1rem, 2vw, 1.3rem);
-        font-weight: 600;
-        letter-spacing: 0.03em;
-        max-width: 520px;
-        padding: 9px 18px;
-        border: 1px solid rgba(25, 230, 168, 0.35);
-        border-radius: 999px;
-        background: rgba(4, 9, 12, 0.72);
-        box-shadow:
-          0 8px 24px rgba(0, 0, 0, 0.25),
-          0 0 24px rgba(25, 230, 168, 0.1);
-        backdrop-filter: blur(8px);
-        text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
-      }
+        opacity 0.3s,
+        translate 0.4s var(--ease),
+        visibility 0.3s;
       &.gone {
         opacity: 0;
-        transform: translateY(-40px) scale(1.05);
-        filter: blur(10px);
-        pointer-events: none;
+        translate: 0 -24px;
+        visibility: hidden;
       }
     }
-    @media (min-width: 900px) {
-      .intro {
-        inset: 0 auto 0 0;
-        width: 38vw;
-        padding-left: 6vw;
-        place-content: center start;
-        justify-items: start;
-        text-align: left;
-      }
-      .intro h1 {
-        font-size: clamp(2.2rem, 3vw, 3.2rem);
-      }
-      .intro .hint {
-        left: 50%;
-        translate: -50% 0;
-      }
-      .intro .lead {
-        max-width: 300px;
-        font-size: clamp(0.95rem, 1.3vw, 1.1rem);
+    h1,
+    h2 {
+      font-size: clamp(2.6rem, 5vw, 5.4rem);
+      font-weight: 900;
+      line-height: 0.98;
+      letter-spacing: -0.03em;
+      span {
+        display: block;
+        width: fit-content;
+        padding-bottom: 0.06em;
+        background: linear-gradient(var(--yellow), var(--yellow)) 0 100% / 100% 0.16em no-repeat;
       }
     }
-    @media (max-width: 620px) {
-      .intro {
-        place-content: start center;
-        padding-top: 12svh;
-      }
+    .intro p,
+    .outro p {
+      font-size: 1.1rem;
+      font-weight: 600;
+      max-width: 34ch;
     }
-    .hint {
-      position: absolute;
-      bottom: 38px;
-      display: grid;
-      justify-items: center;
-      gap: 12px;
-      font-size: 0.75rem;
-      letter-spacing: 0.3em;
-      text-transform: uppercase;
-      color: var(--muted);
-      i {
-        width: 24px;
-        height: 40px;
-        border: 2px solid var(--green);
-        border-radius: 14px;
-        position: relative;
-        &::after {
-          content: '';
-          position: absolute;
-          left: 50%;
-          top: 7px;
-          width: 4px;
-          height: 8px;
-          margin-left: -2px;
-          border-radius: 4px;
-          background: var(--green);
-          animation: wheel 1.6s infinite;
-        }
-      }
+    .cta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 4px;
     }
-    @keyframes wheel {
-      0% {
-        opacity: 1;
-        transform: translateY(0);
-      }
-      100% {
-        opacity: 0;
-        transform: translateY(14px);
-      }
-    }
-
-    .phrase {
-      position: absolute;
-      top: 50%;
-      width: min(760px, 88%);
-      pointer-events: none;
-      opacity: 0;
-      transform: translate(60px, -50%);
-      filter: blur(14px);
-      transition:
-        opacity 0.55s,
-        transform 0.75s cubic-bezier(0.2, 0.8, 0.2, 1),
-        filter 0.55s;
-      h2 {
-        font-size: clamp(2.2rem, 7vw, 5.6rem);
-        font-weight: 900;
-        line-height: 1;
-        text-transform: uppercase;
-        span {
-          color: var(--text);
-        }
-      }
-      p {
-        margin-top: 14px;
-        font-size: clamp(0.95rem, 1.6vw, 1.25rem);
-        color: #cfe6e3;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-      &.left {
-        left: 6%;
-        text-align: left;
-      }
-      &.right {
-        right: 6%;
-        text-align: right;
-        transform: translate(-60px, -50%);
-      }
-      &.center {
-        left: 50%;
-        margin-left: calc(min(760px, 88%) / -2);
-        text-align: center;
-        transform: translate(0, -20%);
-      }
-      &.on {
-        opacity: 1;
-        filter: none;
-        transform: translate(0, -50%);
-      }
-      &.past {
-        transform: translate(-80px, -50%);
-        filter: blur(14px);
-      }
-      &.right.past {
-        transform: translate(80px, -50%);
-      }
-      &.center.past {
-        transform: translate(0, -90%);
-      }
+    .btn-linha {
+      background: rgba(236, 237, 231, 0.86);
     }
 
     .outro {
-      position: absolute;
-      inset: auto 0 12% 0;
-      display: grid;
-      justify-items: center;
-      gap: 26px;
-      text-align: center;
       opacity: 0;
-      transform: translateY(40px);
+      visibility: hidden;
+      translate: 0 24px;
       transition:
-        opacity 0.7s,
-        transform 0.7s;
-      pointer-events: none;
-      h2 {
-        font-size: clamp(2.4rem, 7vw, 5rem);
+        opacity 0.4s,
+        translate 0.5s var(--ease),
+        visibility 0.4s;
+      &.on {
+        opacity: 1;
+        visibility: visible;
+        translate: 0 0;
+      }
+    }
+
+    .beats {
+      position: absolute;
+      left: max(20px, calc((100vw - 1240px) / 2));
+      top: 30%;
+      width: min(36vw, 520px);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      li {
+        position: absolute;
+        inset: 0 auto auto 0;
+        display: grid;
+        gap: 10px;
+        clip-path: inset(0 100% 0 0);
+        transition: clip-path 0.5s var(--ease);
+        &.on {
+          clip-path: inset(0 0 0 0);
+        }
+        &.past {
+          clip-path: inset(0 0 0 100%);
+          transition-duration: 0.3s;
+        }
+      }
+      .when {
+        width: fit-content;
+        padding: 6px 10px 4px;
+        border-radius: var(--r);
+        background: var(--ink);
+        color: var(--paper);
+        font-size: 0.95rem;
+      }
+      strong {
+        font-size: clamp(2.6rem, 5.4vw, 5.6rem);
         font-weight: 900;
-        text-transform: uppercase;
-      }
-      .cta {
-        display: flex;
-        gap: 14px;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-      &.on {
-        opacity: 1;
-        transform: none;
-        pointer-events: auto;
+        line-height: 0.98;
+        letter-spacing: -0.03em;
       }
     }
 
-    .hud {
+    .guia {
       position: absolute;
-      left: 6%;
-      right: 6%;
-      bottom: 34px;
-      display: flex;
+      left: max(20px, calc((100vw - 1240px) / 2));
+      bottom: 24px;
+      width: min(600px, 100vw - 40px);
+      display: grid;
+      grid-template-columns: auto 200px 1fr;
       align-items: center;
-      gap: 22px;
-      opacity: 0;
-      transition: opacity 0.5s;
-      &.on {
-        opacity: 1;
+      gap: 8px 16px;
+      padding: 12px;
+      background: var(--paper);
+      border: 2px solid var(--ink);
+      border-radius: var(--r);
+      box-shadow: 0 18px 40px -22px rgba(21, 24, 28, 0.55);
+    }
+    .clock {
+      justify-self: start;
+      padding: 10px 16px 7px;
+      font-size: 2rem;
+      line-height: 1;
+    }
+    .map {
+      width: 100%;
+      height: auto;
+      border-radius: 3px;
+      .land {
+        fill: var(--paper-2);
       }
-      .speed {
-        display: flex;
-        align-items: baseline;
-        gap: 8px;
-        min-width: 150px;
-        font-family: var(--font-display);
-        b {
-          font-size: 2.4rem;
-          font-weight: 700;
-          color: var(--green);
-          text-shadow: 0 0 18px rgba(25, 230, 168, 0.6);
-          font-variant-numeric: tabular-nums;
-        }
-        span {
-          font-size: 0.75rem;
-          letter-spacing: 0.2em;
-          color: var(--muted);
+      .park {
+        fill: #c9dcc0;
+      }
+      .street {
+        stroke: #fff;
+        stroke-width: 7;
+        fill: none;
+      }
+      .route-base {
+        fill: none;
+        stroke: var(--paper-3);
+        stroke-width: 6;
+        stroke-linejoin: round;
+      }
+      .route {
+        fill: none;
+        stroke: var(--blue);
+        stroke-width: 6;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+      }
+      .stop {
+        fill: #fff;
+        stroke: var(--ink);
+        stroke-width: 3;
+        &.hit {
+          fill: var(--yellow);
         }
       }
-      .bar {
-        flex: 1;
-        height: 3px;
-        background: rgba(255, 255, 255, 0.12);
-        border-radius: 3px;
-        overflow: hidden;
-        i {
-          display: block;
-          height: 100%;
-          width: calc(var(--p) * 100%);
-          background: var(--grad);
-          box-shadow: 0 0 14px var(--green);
-        }
+      .marker circle {
+        fill: var(--blue);
+        stroke: #fff;
+        stroke-width: 3;
+      }
+      .marker .dot {
+        fill: #fff;
+        stroke: none;
       }
     }
-    .skip {
-      position: absolute;
-      top: calc(var(--header-h) + 14px);
-      right: 20px;
-      background: rgba(4, 9, 12, 0.5);
-      border: 1px solid var(--line);
-      border-radius: 99px;
-      padding: 8px 16px;
+    .read {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 16px;
+      align-items: end;
+      .lbl {
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--ink-2);
+      }
+      b {
+        font-size: 1.35rem;
+      }
+    }
+    .batt i {
+      display: block;
+      height: 14px;
+      margin-top: 4px;
+      border: 2px solid var(--ink);
+      border-radius: 3px;
+      padding: 1px;
+      b {
+        display: block;
+        height: 100%;
+        width: 100%;
+        background: var(--blue);
+        transform-origin: left;
+      }
+    }
+    .read {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .note {
+      grid-column: 1 / -1;
       font-size: 0.78rem;
-      color: var(--muted);
-      backdrop-filter: blur(8px);
-      transition:
-        color 0.2s,
-        border-color 0.2s;
-      &:hover {
-        color: var(--text);
-        border-color: var(--green);
+      color: var(--ink-2);
+    }
+
+    /* No desktop o .slot não gera caixa: os textos se posicionam sobre a foto, no palco. */
+    .slot {
+      display: contents;
+    }
+
+    @media (max-width: 760px) {
+      @include flow;
+      .guia {
+        padding: 10px;
+        gap: 8px 14px;
+        align-items: center;
+      }
+      .clock {
+        font-size: 1.5rem;
+      }
+      .read b {
+        font-size: 1.15rem;
+      }
+      .note {
+        grid-column: 1 / -1;
+      }
+      .outro .btn {
+        min-height: 44px;
+        padding: 10px 16px 8px;
+      }
+    }
+    /* Celulares baixos: o texto de apoio sai para o título e os botões caberem acima do painel. */
+    @media (max-width: 760px) and (max-height: 760px) {
+      .slot {
+        margin-top: 14px;
+      }
+      .intro,
+      .outro {
+        gap: 12px;
+      }
+      .outro p {
+        display: none;
+      }
+    }
+    @media (max-width: 760px) and (max-height: 620px) {
+      .intro p {
+        display: none;
+      }
+      .intro h1,
+      .outro h2,
+      .beats strong {
+        font-size: 1.75rem;
       }
     }
 
-    @media (max-width: 700px) {
-      .track {
-        height: 520vh;
-      }
-      video,
-      .fb {
-        left: -20%;
-        width: 140%;
-        max-width: none;
-        object-fit: contain;
-        object-position: 50% 58%;
-        --edge-feather: 12%;
-      }
-      .intro {
-        place-content: start center;
-        padding-top: calc(var(--header-h) + 70px);
-        gap: 14px;
-        h1 {
-          font-size: clamp(2rem, 9.5vw, 3rem);
-          letter-spacing: 0.04em;
-        }
-        .lead {
-          font-size: 0.96rem;
-          max-width: 340px;
-          padding: 0;
-          border: 0;
-          border-radius: 0;
-          background: none;
-          box-shadow: none;
-          backdrop-filter: none;
-          text-shadow: none;
-        }
-      }
-      .phrase {
-        top: calc(var(--header-h) + 95px);
-        transform: translateY(20px);
-        h2 {
-          font-size: 1.8rem;
-        }
-        p {
-          font-size: 0.85rem;
-          letter-spacing: 0.01em;
-          text-transform: none;
-        }
-        &.on,
-        &.right.on,
-        &.center.on {
-          transform: none;
-        }
-      }
-      .outro {
-        bottom: 10%;
-        padding-inline: 20px;
-        h2 {
-          font-size: 2rem;
-        }
-        .cta {
-          gap: 10px;
-        }
-        .btn {
-          font-size: 0.82rem;
-          padding: 12px 16px;
-        }
-      }
-      .hint {
-        bottom: 34px;
-        font-size: 0.65rem;
-        letter-spacing: 0.18em;
-      }
-      .skip {
-        font-size: 0.72rem;
-        padding: 8px 12px;
-      }
-      .phrase.left,
-      .phrase.right {
-        left: 6%;
-        right: 6%;
-        width: auto;
-        text-align: left;
-      }
-      .hud {
-        bottom: 22px;
-      }
-      .speed b {
-        font-size: 1.8rem;
-      }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .track {
-        height: 100svh;
-        min-height: 640px;
-      }
+    /* Movimento reduzido: sem pin nem scrub. Manhã e fim de tarde lado a lado, roteiro em lista. */
+    :host(.static) {
+      @include flow;
       .stage {
-        position: relative;
+        height: auto;
+        padding-bottom: 32px;
       }
-      .streaks,
-      .phrase,
+      .slot {
+        margin: 0;
+      }
+      .intro p,
+      .outro p {
+        display: block;
+      }
+      .intro,
       .outro,
-      .hud,
-      .skip {
-        display: none;
+      .beats,
+      .guia {
+        position: relative;
+        inset: auto;
+        top: auto;
+        margin: 24px 20px 0;
+        opacity: 1;
+        visibility: visible;
+        translate: none;
       }
-      .hint {
-        display: none;
+      .beats li {
+        position: static;
+        clip-path: none;
+        margin-bottom: 14px;
+        strong {
+          font-size: 1.6rem;
+        }
       }
-      .intro {
-        transition: none;
+      .guia {
+        width: min(640px, 100% - 40px);
+        .map {
+          display: block;
+        }
+      }
+      @media (min-width: 761px) {
+        .guia {
+          grid-template-columns: auto 200px 1fr;
+        }
+      }
+      @media (min-width: 761px) {
+        .frame {
+          max-height: 70svh;
+        }
+        .intro,
+        .outro,
+        .beats,
+        .guia {
+          margin-inline: max(20px, calc((100vw - 1240px) / 2));
+        }
       }
     }
   `,
 })
 export class Hero implements AfterViewInit, OnDestroy {
-  private track = viewChild.required<ElementRef<HTMLElement>>('track');
+  private section = viewChild.required<ElementRef<HTMLElement>>('section');
   private stage = viewChild.required<ElementRef<HTMLElement>>('stage');
-  private video = viewChild.required<ElementRef<HTMLVideoElement>>('video');
+  private canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
+  private clock = viewChild.required<ElementRef<HTMLElement>>('clock');
+  private km = viewChild.required<ElementRef<HTMLElement>>('km');
+  private batt = viewChild.required<ElementRef<HTMLElement>>('batt');
+  private route = viewChild.required<ElementRef<SVGPolylineElement>>('route');
+  private marker = viewChild.required<ElementRef<SVGGElement>>('marker');
+  private endPoster = viewChild<ElementRef<HTMLImageElement>>('endPoster');
 
+  protected readonly stops = DAY_STOPS;
+  protected readonly streets = MAP_STREETS;
+  protected readonly routePts = ROUTE_POINTS.map((p) => p.join(',')).join(' ');
+  protected readonly routeLen = ROUTE_LEN;
+  protected readonly model = MODEL_NAME;
+  protected readonly modelId = MODEL_ID;
+  protected readonly range = MODEL_RANGE_KM;
+  protected readonly dayKm = kmText(DAY_STOPS[DAY_STOPS.length - 1].km);
+  protected readonly time = hhmm;
+
+  protected beat = signal(-1);
+  protected introGone = signal(false);
+  protected ended = signal(false);
+  protected still = signal(false);
   protected failed = signal(false);
-  protected progress = signal(0);
 
-  protected phrases: Phrase[] = [
-    {
-      text: 'Mobilidade elétrica urbana',
-      sub: 'Uma nova forma de olhar para os trajetos pela cidade.',
-      from: 0.1,
-      to: 0.25,
-      pos: 'left',
-    },
-    {
-      text: 'Do guidão à rua',
-      sub: 'Linhas compactas e uma posição de pilotagem aberta.',
-      from: 0.27,
-      to: 0.42,
-      pos: 'right',
-    },
-    {
-      text: 'Detalhes que definem o desenho',
-      sub: 'Farol redondo, plataforma baixa e banco com encosto.',
-      from: 0.44,
-      to: 0.6,
-      pos: 'left',
-    },
-    {
-      text: 'A cidade em movimento',
-      sub: 'Do bairro às avenidas, cada caminho tem seu ritmo.',
-      from: 0.62,
-      to: 0.78,
-      pos: 'right',
-    },
-    {
-      text: 'Escolha seu estilo',
-      sub: 'Silhuetas urbanas e formas retrô para explorar.',
-      from: 0.8,
-      to: 0.93,
-      pos: 'center',
-    },
-  ];
-
-  protected active = computed(() => {
-    const p = this.progress();
-    return this.phrases.findIndex((f) => p >= f.from && p < f.to);
-  });
-  protected reached = computed(() => this.phrases.filter((f) => this.progress() >= f.from).length);
-
-  private target = 0;
-  private current = 0;
-  private raf = 0;
-  private duration = 0;
-  private onMeta?: () => void;
-  private requested = false;
-  private reduced = false;
-  private motionQuery?: MediaQueryList;
-  private onMotion = () => {
-    this.reduced = this.motionQuery?.matches ?? false;
-    if (this.reduced) {
-      cancelAnimationFrame(this.raf);
-      this.raf = 0;
-      this.progress.set(0);
-      this.current = this.target = 0;
-    } else {
-      this.read();
-    }
-  };
-  private lastSet = -1;
-  /** true enquanto um seek está em voo: evita empilhar seeks e travar o decoder. */
-  private seeking = false;
-  private seekStart = 0;
-  private onSeeked = () => {
-    this.seeking = false;
-    this.pump();
-  };
+  private mm?: gsap.MatchMedia;
+  private scrub?: FrameScrub;
+  private trigger?: ScrollTrigger;
+  private frames = 1;
+  private onResize = () => this.scrub?.resize();
 
   ngAfterViewInit() {
-    const v = this.video().nativeElement;
-    this.motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
-    this.reduced = this.motionQuery.matches;
-    this.motionQuery.addEventListener('change', this.onMotion);
-    v.addEventListener('seeked', this.onSeeked);
-    const onMeta = (this.onMeta = () => {
-      this.duration = v.duration || 0;
-      // "destrava" o vídeo em browsers que exigem um play() antes de permitir seek.
-      v.play()
-        .then(() => v.pause())
-        .catch(() => undefined);
-      this.read();
-    });
-    if (v.readyState >= 1) onMeta();
-    else v.addEventListener('loadedmetadata', onMeta, { once: true });
-    this.read();
+    this.mm = gsap.matchMedia();
+    this.mm.add(
+      {
+        desktop: '(min-width: 761px)',
+        motion: '(prefers-reduced-motion: no-preference)',
+      },
+      (ctx) => {
+        const { desktop, motion } = ctx.conditions as Record<string, boolean>;
+        const saveData =
+          (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData ===
+          true;
+        if (!motion) {
+          this.still.set(true);
+          this.render(1, false);
+          return () => this.still.set(false);
+        }
+        this.still.set(false);
+        this.start(desktop ? 'd' : 'm', !saveData);
+        return () => this.stop();
+      },
+    );
   }
 
   ngOnDestroy() {
-    cancelAnimationFrame(this.raf);
-    this.motionQuery?.removeEventListener('change', this.onMotion);
-    if (this.onMeta) this.video().nativeElement.removeEventListener('loadedmetadata', this.onMeta);
-    this.video().nativeElement.removeEventListener('seeked', this.onSeeked);
+    this.mm?.revert();
   }
 
-  @HostListener('window:scroll')
-  @HostListener('window:resize')
-  read() {
-    if (this.reduced) return;
-    const el = this.track().nativeElement;
-    const total = el.offsetHeight - window.innerHeight;
-    const top = el.getBoundingClientRect().top;
-    this.target = Math.min(1, Math.max(0, -top / total));
-    // No video request before a deliberate scroll. Reduced motion uses the poster only.
-    if (this.target > 0 && this.target < 0.97 && !this.requested && !this.failed()) {
-      this.requested = true;
-      const video = this.video().nativeElement;
-      video.src = 'media/ride.mp4';
-      video.load();
-    }
-    if (!this.raf) this.raf = requestAnimationFrame(() => this.tick());
-  }
-
+  /** Pula para o fim do dia (o scroll continua controlando tudo). */
   skip() {
-    const el = this.track();
-    window.scrollTo({
-      top: el.nativeElement.offsetTop + el.nativeElement.offsetHeight - window.innerHeight,
-      behavior: 'smooth',
+    if (this.trigger) window.scrollTo({ top: this.trigger.end + 2, behavior: 'smooth' });
+  }
+
+  private start(set: FrameSet, loadFrames: boolean) {
+    this.frames = FRAME_SETS[set];
+    if (loadFrames) {
+      const urls = Array.from({ length: this.frames }, (_, i) => frameUrl(set, i));
+      this.scrub = new FrameScrub(this.canvas().nativeElement, urls, 0.7, (ok) => {
+        if (!ok) this.failed.set(true);
+      });
+      addEventListener('resize', this.onResize);
+    } else {
+      this.failed.set(true);
+    }
+
+    const state = { p: 0 };
+    const tween = gsap.to(state, {
+      p: 1,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: this.section().nativeElement,
+        pin: this.stage().nativeElement,
+        start: 'top top',
+        end: set === 'd' ? '+=320%' : '+=220%',
+        scrub: 0.6,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,
+      },
+      onUpdate: () => this.render(state.p, true),
     });
+    this.trigger = tween.scrollTrigger;
+    this.render(0, true);
+    // fontes e imagens mudam a altura do layout: recalcula depois que tudo assentar
+    void document.fonts?.ready.then(() => ScrollTrigger.refresh());
   }
 
-  private tick() {
-    this.raf = 0;
-    // suavização: o vídeo "persegue" a posição do scroll
-    this.current += (this.target - this.current) * 0.14;
-    if (Math.abs(this.target - this.current) < 0.0006) this.current = this.target;
-
-    this.progress.set(Math.round(this.current * 1000) / 1000);
-    this.stage().nativeElement.style.setProperty('--p', this.current.toFixed(4));
-
-    this.pump();
-    // continua o loop enquanto o scroll não alcançou o alvo ou o vídeo ainda deve seguir
-    if (this.current !== this.target || this.pending())
-      this.raf = requestAnimationFrame(() => this.tick());
+  private stop() {
+    removeEventListener('resize', this.onResize);
+    this.scrub?.dispose();
+    this.scrub = undefined;
+    this.trigger = undefined;
   }
 
-  /** tempo do vídeo correspondente à posição atual do scroll. */
-  private time() {
-    return this.current * (this.duration - 0.04);
-  }
+  private render(p: number, moving: boolean) {
+    const d = dayAt(p);
+    const t = videoAt(d.min);
 
-  private pending() {
-    return this.duration > 0 && Math.abs(this.time() - this.lastSet) > 1 / 48;
-  }
+    this.scrub?.set(t * (this.frames - 1));
+    const end = this.endPoster()?.nativeElement;
+    if (end) end.style.opacity = String(t);
 
-  /**
-   * Pede no máximo um seek por vez. O próximo só sai quando o anterior terminou
-   * (evento `seeked`), então o vídeo acompanha o decoder em vez de engasgar.
-   */
-  private pump() {
-    // alguns browsers (Safari) engolem o `seeked`: solta o seek travado depois de 400ms.
-    if (this.seeking && performance.now() - this.seekStart < 400) return;
-    if (!this.pending()) return;
-    this.seeking = true;
-    this.seekStart = performance.now();
-    this.lastSet = this.time();
-    this.video().nativeElement.currentTime = this.lastSet;
+    this.clock().nativeElement.textContent = moving ? hhmm(d.min) : '07:30–18:00';
+    this.km().nativeElement.textContent = kmText(d.km);
+    this.batt().nativeElement.style.transform = `scaleX(${clamp(1 - d.km / MODEL_RANGE_KM)})`;
+    this.route().nativeElement.style.strokeDashoffset = String(ROUTE_LEN - d.len);
+    const [x, y] = pointAt(d.len);
+    this.marker().nativeElement.setAttribute('transform', `translate(${x} ${y})`);
+
+    if (!moving) return;
+    // cada frase aparece um pouco antes da parada e sai antes da próxima
+    let b = -1;
+    for (let i = 0; i < AT.length; i++) {
+      const enter = AT[i] - 0.035;
+      const leave = i < AT.length - 1 ? AT[i + 1] - 0.06 : 0.925;
+      if (p >= enter && p < leave) b = i;
+    }
+    if (b !== this.beat()) this.beat.set(b);
+    const gone = p > 0.06;
+    if (gone !== this.introGone()) this.introGone.set(gone);
+    const ended = p >= 0.925;
+    if (ended !== this.ended()) this.ended.set(ended);
   }
 }

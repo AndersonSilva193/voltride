@@ -1,6 +1,5 @@
 import { Component, computed, signal, inject } from '@angular/core';
 import { ProductCard } from '../components/product-card';
-import { Reveal } from '../directives/reveal';
 import { Meta } from '@angular/platform-browser';
 import { CATEGORY_LABEL, PRODUCTS } from '../data/products';
 
@@ -8,24 +7,15 @@ type Sort = 'relevance' | 'price-asc' | 'price-desc';
 
 @Component({
   selector: 'app-shop',
-  imports: [ProductCard, Reveal],
+  imports: [ProductCard],
   template: `
-    <section class="top">
-      <img
-        src="media/start-1280.webp"
-        srcset="media/start-640.webp 640w, media/start-1280.webp 1280w"
-        sizes="100vw"
-        width="1280"
-        height="728"
-        alt=""
-      />
-      <div class="container">
-        <h1>Explore os modelos</h1>
-      </div>
+    <section class="top container">
+      <h1>Todos os modelos.</h1>
+      <p>Sete scooters elétricas para o bairro e a cidade. Valores de referência de pesquisa.</p>
     </section>
 
     <section class="container shop">
-      <div class="toolbar" appReveal>
+      <div class="toolbar">
         <div class="chips" role="group" aria-label="Categorias">
           @for (c of categories; track c.id) {
             <button
@@ -41,7 +31,8 @@ type Sort = 'relevance' | 'price-asc' | 'price-desc';
           class="search"
           type="search"
           placeholder="Buscar modelo…"
-          aria-label="Buscar"
+          aria-label="Buscar modelo"
+          [value]="query()"
           (input)="query.set($any($event.target).value)"
         />
         <div class="dd" (focusout)="onFocusOut($event)" (keydown.escape)="open.set(false)">
@@ -91,52 +82,38 @@ type Sort = 'relevance' | 'price-asc' | 'price-desc';
           }
         </div>
       } @else {
-        <div class="empty card">
+        <div class="empty">
           <p>Nenhum modelo encontrado.</p>
-          <button class="btn btn-ghost" (click)="reset()">Limpar filtros</button>
+          <button class="btn btn-linha" (click)="reset()">Limpar filtros</button>
         </div>
       }
     </section>
   `,
   styles: `
     .top {
-      position: relative;
-      padding: calc(var(--header-h) + 80px) 0 70px;
-      overflow: hidden;
-      border-bottom: 1px solid var(--line);
-      img {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: 50% 55%;
-        opacity: 0.35;
-      }
-      &::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(180deg, transparent 30%, var(--bg));
-      }
-      .container {
-        position: relative;
-        z-index: 1;
-      }
+      padding: calc(var(--header-h) + 72px) 0 36px;
+      display: grid;
+      gap: 12px;
       h1 {
-        font-size: clamp(2.2rem, 6vw, 4.2rem);
-        margin-top: 14px;
+        font-size: clamp(2.6rem, 6vw, 5rem);
+        font-weight: 900;
+      }
+      p {
+        color: var(--ink-2);
+        font-size: 1.1rem;
       }
     }
     .shop {
-      padding: 40px 0 110px;
+      padding: 0 0 110px;
     }
     .toolbar {
       display: flex;
-      gap: 14px;
+      gap: 12px;
       flex-wrap: wrap;
       align-items: center;
-      margin-bottom: 18px;
+      padding: 16px 0;
+      margin-bottom: 8px;
+      border-block: 2px solid var(--ink);
     }
     .chips {
       display: flex;
@@ -144,55 +121,62 @@ type Sort = 'relevance' | 'price-asc' | 'price-desc';
       flex-wrap: wrap;
       flex: 1;
       button {
-        padding: 10px 20px;
-        border-radius: 99px;
-        border: 1px solid var(--line);
+        min-height: 44px;
+        padding: 10px 16px 8px;
+        border-radius: var(--r);
+        border: 0;
         background: transparent;
-        transition: all 0.25s;
+        font-weight: 700;
+        box-shadow: inset 0 0 0 2px var(--ink);
+        transition: background 0.15s, color 0.15s;
         &:hover {
-          border-color: var(--green);
+          background: var(--paper-2);
         }
         &.on {
-          background: var(--grad);
-          color: #00130d;
-          border-color: transparent;
-          font-weight: 600;
+          background: var(--blue);
+          color: var(--on-blue);
+          box-shadow: inset 0 0 0 3px var(--blue), inset 0 0 0 5px var(--on-blue);
         }
       }
     }
     .search {
       width: 220px;
+      min-height: 44px;
+      padding: 10px 14px 8px;
+      border-radius: var(--r);
+      border: 2px solid var(--ink);
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      &::placeholder {
+        color: var(--ink-2);
+      }
+      &:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--yellow);
+      }
     }
     .dd {
       position: relative;
-      width: 290px;
+      width: 270px;
     }
     .dd-btn {
       width: 100%;
+      min-height: 44px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      padding: 13px 15px;
-      border-radius: 12px;
-      border: 1px solid var(--line);
-      background: var(--bg-2);
-      color: var(--text);
+      padding: 10px 14px 8px;
+      border-radius: var(--r);
+      border: 2px solid var(--ink);
+      background: #fff;
+      color: var(--ink);
       font: inherit;
+      font-weight: 600;
       cursor: pointer;
-      transition:
-        border-color 0.2s,
-        box-shadow 0.2s;
-      &:hover,
-      &[aria-expanded='true'] {
-        border-color: var(--green);
-      }
-      &[aria-expanded='true'] {
-        box-shadow: 0 0 0 3px rgba(25, 230, 168, 0.15);
-      }
       svg {
-        color: var(--green);
-        transition: transform 0.25s;
+        transition: transform 0.2s var(--ease);
         &.up {
           transform: rotate(180deg);
         }
@@ -200,64 +184,53 @@ type Sort = 'relevance' | 'price-asc' | 'price-desc';
     }
     .dd-menu {
       position: absolute;
-      top: calc(100% + 8px);
+      top: calc(100% + 6px);
       left: 0;
       right: 0;
       z-index: 20;
       list-style: none;
       margin: 0;
       padding: 6px;
-      border-radius: 14px;
-      border: 1px solid var(--line);
-      background: var(--surface);
-      box-shadow:
-        0 18px 40px -12px rgba(0, 0, 0, 0.7),
-        0 0 24px -10px var(--green);
-      animation: dd-in 0.18s ease-out;
+      border-radius: var(--r);
+      border: 2px solid var(--ink);
+      background: #fff;
+      box-shadow: 0 16px 32px -18px rgba(21, 24, 28, 0.5);
       button {
         width: 100%;
         text-align: left;
-        padding: 10px 12px;
+        padding: 10px 12px 8px;
         border: 0;
-        border-radius: 9px;
+        border-radius: 4px;
         background: transparent;
-        color: var(--text);
         font: inherit;
         cursor: pointer;
-        transition: background 0.15s;
         &:hover {
-          background: var(--surface-2);
+          background: var(--paper-2);
         }
         &.on {
-          background: var(--grad);
-          color: #00130d;
-          font-weight: 600;
+          background: var(--blue);
+          color: var(--on-blue);
+          font-weight: 700;
         }
-      }
-    }
-    @keyframes dd-in {
-      from {
-        opacity: 0;
-        transform: translateY(-6px);
       }
     }
     .count {
-      color: var(--muted);
-      margin-bottom: 22px;
-      font-size: 0.9rem;
+      color: var(--ink-2);
+      margin: 18px 0 28px;
+      font-size: 0.95rem;
     }
     .grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 26px;
+      gap: 48px 28px;
     }
     .empty {
-      padding: 60px;
-      text-align: center;
+      padding: 60px 0;
       display: grid;
       gap: 20px;
-      justify-items: center;
-      color: var(--muted);
+      justify-items: start;
+      font-size: 1.2rem;
+      font-weight: 700;
     }
     @media (max-width: 960px) {
       .grid {
@@ -273,7 +246,7 @@ type Sort = 'relevance' | 'price-asc' | 'price-desc';
         width: 100%;
       }
     }
-  `,
+`,
 })
 export class Shop {
   constructor() {

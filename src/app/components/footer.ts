@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { contactLink } from '../data/contact';
 
 @Component({
   selector: 'app-footer',
@@ -7,78 +8,82 @@ import { RouterLink } from '@angular/router';
   template: `
     <footer>
       <div class="container grid">
-        <div>
-          <div class="logo">VOLT<b>RIDE</b></div>
-          <p class="muted">
-            Volt Ride é uma marca fictícia criada como peça de portfólio sobre mobilidade elétrica.
+        <div class="brand">
+          <span class="logo placa">Voltride</span>
+          <p>
+            Voltride é uma marca fictícia, criada como peça de portfólio sobre mobilidade elétrica.
+            Fotos e vídeo gerados com IA.
           </p>
         </div>
-        <div>
-          <h4>Catálogo</h4>
-          <a routerLink="/loja">Modelos</a>
-          <a routerLink="/produto/dropp-joy-city">Dropp Joy City</a>
-          <a routerLink="/produto/capuccino-1000w">Capuccino 1000W</a>
-        </div>
-        <div>
-          <h4>O projeto</h4>
-          <a routerLink="/" fragment="tecnologia">Conceito</a>
-          <a routerLink="/" fragment="faq">Dúvidas frequentes</a>
+        <nav aria-label="Rodapé">
+          <a routerLink="/loja">Todos os modelos</a>
+          <a routerLink="/" fragment="linhas">Linhas</a>
+          <a routerLink="/" fragment="duvidas">Dúvidas</a>
+        </nav>
+        <div class="hire">
+          <p>Gostou deste site?</p>
+          <a class="btn btn-meiofio" [href]="hire" target="_blank" rel="noopener">
+            Quero um site assim
+          </a>
         </div>
       </div>
     </footer>
   `,
   styles: `
     footer {
-      border-top: 1px solid var(--line);
-      background: var(--bg-2);
-      padding: 70px 0 28px;
+      background: var(--ink);
+      color: var(--paper);
+      padding: 64px 0 56px;
     }
     .grid {
       display: grid;
       grid-template-columns: 1.4fr 1fr 1fr;
       gap: 40px;
+      align-items: start;
     }
     .logo {
-      font-family: var(--font-display);
-      letter-spacing: 0.18em;
-      font-weight: 700;
-      margin-bottom: 14px;
-      b {
-        color: var(--green);
-      }
-    }
-    h4 {
-      font-size: 0.8rem;
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
+      display: inline-block;
+      padding: 9px 16px 6px;
+      font-weight: 900;
+      font-size: 1.15rem;
       margin-bottom: 16px;
-      color: var(--green);
     }
-    a {
-      display: block;
-      color: var(--muted);
-      padding: 5px 0;
-      transition: color 0.2s;
-      &:hover {
-        color: var(--text);
+    .brand p {
+      color: #b9bdb3;
+      max-width: 42ch;
+      font-size: 0.95rem;
+    }
+    nav {
+      display: grid;
+      gap: 4px;
+      a {
+        width: fit-content;
+        padding: 6px 0 3px;
+        font-weight: 700;
+        border-bottom: 2px solid transparent;
+        &:hover {
+          border-color: var(--yellow);
+        }
       }
     }
-    .muted {
-      color: var(--muted);
-      font-size: 0.92rem;
+    .hire {
+      display: grid;
+      gap: 12px;
+      justify-items: start;
+      p {
+        font-weight: 700;
+        font-size: 1.2rem;
+      }
     }
-    .copy {
-      margin-top: 50px;
-      padding-top: 22px;
-      border-top: 1px solid var(--line);
-      color: var(--muted);
-      font-size: 0.85rem;
-    }
-    @media (max-width: 860px) {
+    @media (max-width: 760px) {
       .grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
       }
     }
   `,
 })
-export class Footer {}
+export class Footer {
+  protected readonly hire = contactLink(
+    'Olá! Vi o projeto Voltride e quero conversar sobre um site para o meu negócio.',
+  );
+}

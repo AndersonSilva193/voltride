@@ -1,100 +1,105 @@
-import { Component, inject, signal } from '@angular/core';
-import { DomSanitizer } from '@angular/platform-browser';
+import { AfterViewInit, Component, ElementRef, OnDestroy, signal, viewChild } from '@angular/core';
+import { CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Hero } from '../components/hero';
-import { ProductCard } from '../components/product-card';
-import { Reveal } from '../directives/reveal';
 import { PRODUCTS } from '../data/products';
+import { imageSources } from '../data/media';
+import { contactLink } from '../data/contact';
+import { Product } from '../models/product';
+
+gsap.registerPlugin(ScrollTrigger);
+
+interface Line {
+  code: string;
+  name: string;
+  spec: string;
+  models: Product[];
+}
+
+const byPower = (w: number) => PRODUCTS.filter((p) => p.specs.power === w);
+const ranges = (ps: Product[]) => {
+  const r = [...new Set(ps.map((p) => p.specs.range))].sort((a, b) => a - b);
+  return r.length > 1 ? `${r[0]}–${r[r.length - 1]}` : `${r[0]}`;
+};
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, Hero, ProductCard, Reveal],
+  imports: [RouterLink, CurrencyPipe, Hero],
   template: `
     <app-hero />
 
-    <section class="stats">
-      <div class="container grid">
-        @for (s of stats; track s.label; let i = $index) {
-          <div appReveal [style.--d]="i * 100 + 'ms'">
-            <b class="grad-text">{{ s.value }}</b
-            ><span>{{ s.label }}</span>
-          </div>
+    <section class="linhas" id="linhas" #linhas aria-labelledby="linhas-title">
+      <div class="container">
+        <header class="head">
+          <h2 id="linhas-title">Escolha a sua linha.</h2>
+          <p>
+            Sete modelos em duas linhas, como num mapa de ônibus: a de 500 W para o dia a dia do
+            bairro e a de 1000 W para quem anda mais.
+          </p>
+        </header>
+
+        @for (l of lines; track l.code) {
+          <article class="line" [attr.aria-labelledby]="'linha-' + l.code">
+            <div class="line-head">
+              <span class="code placa mono">{{ l.code }}</span>
+              <div>
+                <h3 [id]="'linha-' + l.code">{{ l.name }}</h3>
+                <p>{{ l.spec }}</p>
+              </div>
+            </div>
+            <ol class="track" [style.--n]="l.models.length">
+              <i class="rail" aria-hidden="true"></i>
+              @for (p of l.models; track p.id) {
+                <li class="stop">
+                  <a [routerLink]="['/produto', p.id]">
+                    <img
+                      [src]="p.images[0]"
+                      [srcset]="imageSources(p.images[0])"
+                      sizes="(max-width: 760px) 40vw, 240px"
+                      width="1024"
+                      height="688"
+                      [alt]="p.name"
+                      loading="lazy"
+                    />
+                    <span class="pin" aria-hidden="true"></span>
+                    <strong>{{ p.name }}</strong>
+                    <span class="price">{{ p.price | currency: 'BRL' : 'symbol' : '1.0-0' }}</span>
+                  </a>
+                </li>
+              }
+            </ol>
+          </article>
         }
-      </div>
-    </section>
-
-    <section class="section" id="tecnologia">
-      <div class="container">
-        <div appReveal class="head">
-          <p class="eyebrow">Detalhes</p>
-          <h2 class="section-title">Mobilidade elétrica em diferentes formas</h2>
-        </div>
-        <div class="features">
-          @for (f of features; track f.title; let i = $index) {
-            <article class="card" appReveal [style.--d]="i * 90 + 'ms'">
-              <div class="ico" [innerHTML]="f.icon"></div>
-              <h3>{{ f.title }}</h3>
-              <p>{{ f.text }}</p>
-            </article>
-          }
-        </div>
-      </div>
-    </section>
-
-    <section class="section featured">
-      <div class="container">
-        <div appReveal class="head row">
-          <div>
-            <p class="eyebrow">Catálogo</p>
-            <h2 class="section-title">Modelos em destaque</h2>
-          </div>
-          <a class="btn btn-ghost" routerLink="/loja">Ver catálogo</a>
-        </div>
-        <div class="products">
-          @for (p of featured; track p.id; let i = $index) {
-            <app-product-card appReveal [product]="p" [style.--d]="i * 100 + 'ms'" />
-          }
-        </div>
-      </div>
-    </section>
-
-    <section class="banner">
-      <img
-        src="media/end-1280.webp"
-        srcset="media/end-640.webp 640w, media/end-1280.webp 1280w"
-        sizes="100vw"
-        width="1280"
-        height="746"
-        alt=""
-        loading="lazy"
-      />
-      <div class="container inner" appReveal>
-        <p class="eyebrow">Mobilidade urbana</p>
-        <h2>Conheça a coleção Volt Ride</h2>
-        <p>
-          Entre ruas, bairros e avenidas, encontre uma silhueta que combine com seu jeito de
-          circular.
+        <p class="ref">
+          Preços, potência e autonomia são valores de referência de uma pesquisa de mercado, não
+          ofertas nem fichas de fabricante.
         </p>
-        <a class="btn btn-primary" routerLink="/loja">Explorar modelos</a>
       </div>
     </section>
 
-    <section class="section" id="faq">
-      <div class="container narrow">
-        <div appReveal class="head">
-          <p class="eyebrow">Dúvidas</p>
-          <h2 class="section-title">Dúvidas frequentes</h2>
-        </div>
+    <section class="duvidas" id="duvidas" aria-labelledby="duvidas-title">
+      <div class="container cols">
+        <h2 id="duvidas-title">Antes de sair de casa.</h2>
         <div class="faq">
           @for (q of faq; track q.q; let i = $index) {
-            <div class="item" [class.open]="openFaq() === i" appReveal>
-              <button
-                (click)="openFaq.set(openFaq() === i ? -1 : i)"
-                [attr.aria-expanded]="openFaq() === i"
-              >
-                {{ q.q }}<span>+</span>
-              </button>
-              <div class="ans">
+            <div class="item" [class.open]="openFaq() === i">
+              <h3>
+                <button
+                  type="button"
+                  [id]="'q-' + i"
+                  [attr.aria-expanded]="openFaq() === i"
+                  [attr.aria-controls]="'a-' + i"
+                  (click)="openFaq.set(openFaq() === i ? -1 : i)"
+                >
+                  {{ q.q }}
+                  <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="M4 10h12M10 4v12" stroke="currentColor" stroke-width="2.5" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="ans" [id]="'a-' + i" role="region" [attr.aria-labelledby]="'q-' + i">
                 <p>{{ q.a }}</p>
               </div>
             </div>
@@ -102,163 +107,182 @@ import { PRODUCTS } from '../data/products';
         </div>
       </div>
     </section>
+
+    <section class="fim placa-surface" aria-labelledby="fim-title">
+      <div class="container">
+        <h2 id="fim-title">Quer ver uma de perto?</h2>
+        <p>Conte qual modelo chamou sua atenção e consulte disponibilidade pelo WhatsApp.</p>
+        <a class="btn btn-meiofio" [href]="contact" target="_blank" rel="noopener">
+          Falar no WhatsApp
+        </a>
+      </div>
+    </section>
   `,
   styles: `
-    .stats {
-      border-block: 1px solid var(--line);
-      background: var(--bg-2);
-    }
-    .stats .grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      text-align: center;
-      padding: 46px 0;
-      gap: 20px;
-      div {
-        display: grid;
-        gap: 4px;
-      }
-      b {
-        font-family: var(--font-display);
-        font-size: clamp(1.8rem, 4vw, 3rem);
-      }
-      span {
-        color: var(--muted);
-        font-size: 0.9rem;
-      }
+    .linhas {
+      padding: 120px 0 100px;
     }
     .head {
-      margin-bottom: 52px;
-      &.row {
-        display: flex;
-        justify-content: space-between;
-        align-items: end;
-        gap: 20px;
-        flex-wrap: wrap;
-      }
-    }
-    .features {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 22px;
-    }
-    .features .card {
-      padding: 34px 30px;
-      transition:
-        transform 0.35s,
-        border-color 0.35s;
-      &:hover {
-        transform: translateY(-6px);
-        border-color: rgba(25, 230, 168, 0.5);
-      }
-      h3 {
-        font-size: 1.1rem;
-        margin: 22px 0 10px;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px 60px;
+      align-items: end;
+      margin-bottom: 72px;
+      h2 {
+        font-size: clamp(2.4rem, 5vw, 4.6rem);
+        font-weight: 900;
       }
       p {
-        color: var(--muted);
+        max-width: 46ch;
+        color: var(--ink-2);
+        font-size: 1.1rem;
       }
     }
-    .ico {
-      width: 54px;
-      height: 54px;
-      border-radius: 16px;
-      display: grid;
-      place-items: center;
-      background: rgba(25, 230, 168, 0.08);
-      border: 1px solid var(--line);
-      color: var(--green);
+    .line {
+      margin-bottom: 72px;
     }
-    .products {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 26px;
-    }
-    .banner {
-      position: relative;
-      min-height: 560px;
-      display: grid;
+    .line-head {
+      display: flex;
       align-items: center;
-      overflow: hidden;
+      gap: 16px;
+      margin-bottom: 28px;
+      .code {
+        padding: 12px 16px 9px;
+        font-size: 1.6rem;
+        line-height: 1;
+      }
+      h3 {
+        font-size: 1.5rem;
+      }
+      p {
+        color: var(--ink-2);
+      }
+    }
+    .track {
+      position: relative;
+      display: grid;
+      /* todas as linhas usam a mesma largura de parada (5 por linha) */
+      width: calc((100% + 20px) * var(--n) / 5 - 20px);
+      grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+      gap: 20px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .rail {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: var(--rail-y, 0);
+      height: 8px;
+      margin-top: -4px;
+      background: var(--blue);
+      border-radius: 4px;
+      transform-origin: left;
+    }
+    .stop a {
+      display: grid;
+      gap: 6px;
       img {
-        position: absolute;
-        inset: 0;
         width: 100%;
-        height: 100%;
+        height: auto;
+        aspect-ratio: 3 / 2;
         object-fit: cover;
+        border-radius: var(--r);
+        transition: translate 0.3s var(--ease);
       }
-      &::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(
-          90deg,
-          rgba(4, 9, 12, 0.95) 10%,
-          rgba(4, 9, 12, 0.35) 70%,
-          transparent
-        );
-      }
-      .inner {
+      .pin {
         position: relative;
         z-index: 1;
-        display: grid;
-        gap: 20px;
-        justify-items: start;
-        max-width: 1200px;
-        h2 {
-          font-size: clamp(2rem, 5vw, 3.8rem);
-          max-width: 620px;
+        width: 22px;
+        height: 22px;
+        margin: 10px 0 8px;
+        border-radius: 50%;
+        background: #fff;
+        border: 4px solid var(--ink);
+        transition: background 0.18s;
+      }
+      strong {
+        font-size: 1.1rem;
+        line-height: 1.15;
+      }
+      .price {
+        color: var(--ink-2);
+        font-size: 0.95rem;
+      }
+      &:hover {
+        img {
+          translate: 0 -6px;
         }
-        p:not(.eyebrow) {
-          color: #cfe6e3;
-          max-width: 480px;
+        .pin {
+          background: var(--yellow);
+        }
+        strong {
+          text-decoration: underline;
+          text-decoration-thickness: 2px;
         }
       }
     }
-    .narrow {
-      max-width: 820px;
+    .ref {
+      font-size: 0.88rem;
+      color: var(--ink-2);
+      max-width: 70ch;
+    }
+
+    .duvidas {
+      padding: 100px 0;
+      border-top: 2px solid var(--ink);
+      background: var(--paper-2);
+    }
+    .cols {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 40px 60px;
+      align-items: start;
+      h2 {
+        font-size: clamp(2.2rem, 4vw, 3.6rem);
+        font-weight: 900;
+        position: sticky;
+        top: calc(var(--header-h) + 32px);
+      }
     }
     .faq {
-      display: grid;
-      gap: 12px;
+      border-top: 2px solid var(--ink);
     }
     .item {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: var(--surface);
-      overflow: hidden;
-      transition: border-color 0.3s;
-      &.open {
-        border-color: rgba(25, 230, 168, 0.5);
+      border-bottom: 1px solid var(--line);
+      h3 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: 0;
       }
       button {
         width: 100%;
-        text-align: left;
-        background: none;
-        border: 0;
-        padding: 20px 24px;
-        font-weight: 600;
         display: flex;
         justify-content: space-between;
         align-items: center;
         gap: 16px;
-        span {
-          font-size: 1.5rem;
-          color: var(--green);
-          transition: transform 0.3s;
+        padding: 22px 0 18px;
+        background: none;
+        border: 0;
+        text-align: left;
+        font-weight: 700;
+        svg {
+          flex: none;
+          transition: rotate 0.25s var(--ease);
         }
       }
-      &.open button span {
-        transform: rotate(45deg);
+      &.open svg {
+        rotate: 45deg;
       }
       .ans {
         display: grid;
         grid-template-rows: 0fr;
-        transition: grid-template-rows 0.35s;
+        transition: grid-template-rows 0.3s var(--ease);
         p {
           overflow: hidden;
-          padding: 0 24px;
-          color: var(--muted);
+          color: var(--ink-2);
+          max-width: 62ch;
         }
       }
       &.open .ans {
@@ -268,93 +292,108 @@ import { PRODUCTS } from '../data/products';
         }
       }
     }
-    @media (max-width: 960px) {
-      .features,
-      .products {
-        grid-template-columns: 1fr 1fr;
+
+    .placa-surface {
+      background: var(--blue);
+      color: var(--on-blue);
+    }
+    .fim {
+      padding: 110px 0;
+      .container {
+        display: grid;
+        gap: 22px;
+        justify-items: start;
+      }
+      h2 {
+        font-size: clamp(2.6rem, 6vw, 5.6rem);
+        font-weight: 900;
+      }
+      p {
+        color: var(--on-blue-2);
+        font-size: 1.15rem;
+        max-width: 44ch;
       }
     }
-    @media (max-width: 620px) {
-      .stats .grid {
+
+    @media (max-width: 900px) {
+      .head,
+      .cols {
         grid-template-columns: 1fr;
       }
-      .features,
-      .products {
-        grid-template-columns: 1fr;
+      .cols h2 {
+        position: static;
       }
-      .section {
-        padding: 80px 0;
+    }
+    @media (max-width: 760px) {
+      .linhas {
+        padding: 80px 0 60px;
+      }
+      /* No celular a linha fica vertical, como um diagrama de parada em parada. */
+      .track {
+        width: auto;
+        grid-template-columns: 1fr;
+        gap: 0;
+        padding-left: 34px;
+      }
+      .rail {
+        top: 0;
+        bottom: 0;
+        left: 7px;
+        right: auto;
+        width: 8px;
+        height: auto;
+        margin: 0;
+        transform-origin: top;
+      }
+      .stop a {
+        grid-template-columns: 40% 1fr;
+        grid-template-rows: auto auto 1fr;
+        column-gap: 14px;
+        padding: 12px 0;
+        position: relative;
+        img {
+          grid-row: 1 / 4;
+        }
+        .pin {
+          position: absolute;
+          left: -34px;
+          top: calc(50% - 11px);
+          margin: 0;
+        }
+        strong {
+          align-self: end;
+        }
       }
     }
   `,
 })
-export class Home {
+export class Home implements AfterViewInit, OnDestroy {
+  private linhas = viewChild.required<ElementRef<HTMLElement>>('linhas');
+  private ctx?: gsap.Context;
+
+  protected readonly imageSources = imageSources;
+  protected readonly contact = contactLink();
   protected openFaq = signal(0);
-  protected featured = PRODUCTS.slice(0, 3);
 
-  protected stats = [
-    { value: 'Urbana', label: 'Silhuetas para a cidade' },
-    { value: 'Compacta', label: 'Formas de proporções enxutas' },
-    { value: 'Retrô', label: 'Curvas e farol redondo' },
-  ];
-
-  private sanitizer = inject(DomSanitizer);
-  /** Ícones SVG estáticos definidos neste arquivo (conteúdo confiável). */
-  private icon = (svg: string) => this.sanitizer.bypassSecurityTrustHtml(svg);
-
-  protected features = [
+  protected lines: Line[] = [
     {
-      title: 'Formas urbanas',
-      text: 'Linhas angulosas desenham perfis voltados para a cidade.',
-      icon: this.icon(
-        '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>',
-      ),
+      code: '500',
+      name: 'Linha Bairro',
+      spec: `500 W, ${ranges(byPower(500))} km de autonomia de referência`,
+      models: byPower(500),
     },
     {
-      title: 'Faróis',
-      text: 'Formatos redondos e retangulares dão identidade à dianteira.',
-      icon: this.icon(
-        '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2M7 10v4M11 10v4"/></svg>',
-      ),
-    },
-    {
-      title: 'Bancos',
-      text: 'Bancos alongados encontram encostos na parte traseira.',
-      icon: this.icon(
-        '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>',
-      ),
-    },
-    {
-      title: 'Cestas frontais',
-      text: 'Em alguns modelos, a cesta integra a dianteira.',
-      icon: this.icon(
-        '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>',
-      ),
-    },
-    {
-      title: 'Cores e contrastes',
-      text: 'Preto e detalhes vermelhos dividem espaço com creme e caramelo.',
-      icon: this.icon(
-        '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>',
-      ),
-    },
-    {
-      title: 'Traços retrô',
-      text: 'Na Capuccino, curvas arredondadas marcam a silhueta.',
-      icon: this.icon(
-        '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>',
-      ),
+      code: '1000',
+      name: 'Linha Cidade',
+      spec: `1000 W, ${ranges(byPower(1000))} km de autonomia de referência`,
+      models: byPower(1000),
     },
   ];
 
   protected faq = [
     {
-      q: 'Como conhecer um modelo?',
-      a: 'Acesse o catálogo e abra a página do modelo para conferir os detalhes apresentados.',
-    },
-    {
       q: 'Como consultar disponibilidade?',
-      a: 'Use o botão Fale conosco para perguntar sobre o modelo que você escolheu.',
+      a: 'Use o botão Fale conosco ou o Falar no WhatsApp e diga qual modelo você escolheu.',
     },
     {
       q: 'De onde vêm os preços?',
@@ -365,12 +404,56 @@ export class Home {
       a: 'São valores de referência da pesquisa, apresentados para este projeto. Não são especificações verificadas com um fabricante.',
     },
     {
-      q: 'Como funciona o atendimento?',
-      a: 'O botão Fale conosco abre uma conversa pelo WhatsApp.',
+      q: 'O dia do começo da página é real?',
+      a: 'Não. Os horários e quilômetros do roteiro são ilustrativos, para mostrar como um dia comum se compara à autonomia de referência do modelo.',
     },
     {
       q: 'Preciso de habilitação para conduzir um veículo elétrico?',
       a: 'As regras dependem da classificação do veículo e da legislação aplicável. Este projeto não determina a categoria nem substitui a consulta às regras oficiais.',
     },
   ];
+
+  ngAfterViewInit() {
+    const root = this.linhas().nativeElement;
+    this.ctx = gsap.context(() => {
+      gsap.matchMedia().add('(prefers-reduced-motion: no-preference)', () => {
+        root.querySelectorAll<HTMLElement>('.track').forEach((track) => {
+          const vertical = matchMedia('(max-width: 760px)').matches;
+          const rail = track.querySelector('.rail');
+          const pins = track.querySelectorAll('.pin');
+          const tl = gsap.timeline({
+            scrollTrigger: { trigger: track, start: 'top 78%', once: true },
+          });
+          tl.from(rail, {
+            [vertical ? 'scaleY' : 'scaleX']: 0,
+            duration: 0.9,
+            ease: 'power3.inOut',
+          }).from(
+            pins,
+            { scale: 0, duration: 0.35, ease: 'back.out(2)', stagger: 0.09 },
+            0.25,
+          );
+        });
+      });
+    }, root);
+    this.placeRails();
+    addEventListener('resize', this.placeRails);
+  }
+
+  ngOnDestroy() {
+    this.ctx?.revert();
+    removeEventListener('resize', this.placeRails);
+  }
+
+  /** No desktop, o trilho passa pelo centro das bolinhas das paradas. */
+  private placeRails = () => {
+    this.linhas()
+      .nativeElement.querySelectorAll<HTMLElement>('.track')
+      .forEach((track) => {
+        const pin = track.querySelector<HTMLElement>('.pin');
+        if (!pin) return;
+        const y = pin.offsetTop + pin.offsetHeight / 2;
+        track.style.setProperty('--rail-y', `${y}px`);
+      });
+  };
 }

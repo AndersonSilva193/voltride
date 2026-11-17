@@ -6,19 +6,10 @@ import { contactLink } from '../data/contact';
   selector: 'app-header',
   imports: [RouterLink, RouterLinkActive],
   template: `
-    <header [class.solid]="solid()" [class.menu]="menu()">
+    <header [class.menu]="menu()">
       <div class="container bar">
-        <a routerLink="/" class="logo" aria-label="Voltride — início" (click)="menu.set(false)">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="url(#g)" />
-            <defs>
-              <linearGradient id="g" x1="4" y1="2" x2="18" y2="22">
-                <stop stop-color="#19e6a8" />
-                <stop offset="1" stop-color="#19b8ff" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <span>VOLT<b>RIDE</b></span>
+        <a routerLink="/" class="logo placa" aria-label="Voltride, início" (click)="menu.set(false)">
+          Voltride
         </a>
 
         <nav
@@ -26,26 +17,19 @@ import { contactLink } from '../data/contact';
           [class.open]="menu()"
           [attr.inert]="menu() ? null : mobile() ? '' : null"
         >
-          <a
-            routerLink="/"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            (click)="menu.set(false)"
-            >Início</a
-          >
-          <a routerLink="/loja" routerLinkActive="active" (click)="menu.set(false)">Catálogo</a>
-          <a routerLink="/" fragment="tecnologia" (click)="menu.set(false)">Conceito</a>
-          <a routerLink="/" fragment="faq" (click)="menu.set(false)">Dúvidas</a>
+          <a routerLink="/loja" routerLinkActive="active" (click)="menu.set(false)">Modelos</a>
+          <a routerLink="/" fragment="linhas" (click)="menu.set(false)">Linhas</a>
+          <a routerLink="/" fragment="duvidas" (click)="menu.set(false)">Dúvidas</a>
         </nav>
 
         <div class="actions">
-          <a class="btn btn-primary contact" [href]="contact" target="_blank" rel="noopener">
+          <a class="btn btn-meiofio contact" [href]="contact" target="_blank" rel="noopener">
             Fale conosco
           </a>
           <button
             class="burger"
             (click)="menu.set(!menu())"
-            aria-label="Menu"
+            [attr.aria-label]="menu() ? 'Fechar menu' : 'Abrir menu'"
             aria-controls="main-navigation"
             [attr.aria-expanded]="menu()"
           >
@@ -61,62 +45,37 @@ import { contactLink } from '../data/contact';
       inset: 0 0 auto 0;
       z-index: 100;
       height: var(--header-h);
-      transition:
-        background 0.35s,
-        border-color 0.35s,
-        backdrop-filter 0.35s;
-      border-bottom: 1px solid transparent;
-      &.solid,
-      &.menu {
-        background: rgba(4, 9, 12, 0.82);
-        backdrop-filter: blur(14px);
-        border-color: var(--line);
-      }
+      background: var(--paper);
+      border-bottom: 2px solid var(--ink);
     }
     .bar {
       height: 100%;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 24px;
+      gap: 32px;
     }
     .logo {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 10px;
-      font-family: var(--font-display);
-      font-weight: 700;
-      letter-spacing: 0.18em;
-      font-size: 1.05rem;
-      b {
-        color: var(--green);
-        font-weight: 700;
-      }
+      padding: 9px 16px 6px;
+      font-weight: 900;
+      font-size: 1.15rem;
+      letter-spacing: 0.01em;
     }
     nav {
       display: flex;
-      gap: 34px;
+      gap: 28px;
+      margin-right: auto;
       a {
-        font-size: 0.92rem;
-        color: var(--muted);
-        position: relative;
-        transition: color 0.2s;
-        &::after {
-          content: '';
-          position: absolute;
-          left: 0;
-          bottom: -6px;
-          height: 2px;
-          width: 0;
-          background: var(--grad);
-          transition: width 0.3s;
+        font-weight: 700;
+        padding: 6px 0 3px;
+        border-bottom: 3px solid transparent;
+        transition: border-color 0.18s;
+        &:hover {
+          border-color: var(--line);
         }
-        &:hover,
         &.active {
-          color: var(--text);
-          &::after {
-            width: 100%;
-          }
+          border-color: var(--yellow);
         }
       }
     }
@@ -127,9 +86,8 @@ import { contactLink } from '../data/contact';
     }
     .contact {
       white-space: nowrap;
-      margin-block: 8px;
-      padding: 11px 22px;
-      font-size: 0.9rem;
+      min-height: 42px;
+      padding: 10px 18px 8px;
     }
     .burger {
       display: none;
@@ -142,11 +100,11 @@ import { contactLink } from '../data/contact';
         position: absolute;
         left: 11px;
         right: 11px;
-        height: 2px;
-        background: var(--text);
-        transition: transform 0.3s;
+        height: 3px;
+        background: var(--ink);
+        transition: transform 0.25s var(--ease);
         &:first-child {
-          top: 17px;
+          top: 16px;
         }
         &:last-child {
           top: 25px;
@@ -154,62 +112,51 @@ import { contactLink } from '../data/contact';
       }
     }
     .menu .burger span:first-child {
-      transform: translateY(4px) rotate(45deg);
+      transform: translateY(4.5px) rotate(45deg);
     }
     .menu .burger span:last-child {
-      transform: translateY(-4px) rotate(-45deg);
+      transform: translateY(-4.5px) rotate(-45deg);
     }
-    @media (max-width: 820px) {
-      .burger {
-        display: block;
-      }
+    @media (max-width: 760px) {
       .bar {
-        gap: 8px;
+        gap: 10px;
+        justify-content: space-between;
       }
       .logo {
-        font-size: 0.76rem;
-        letter-spacing: 0.1em;
-        gap: 6px;
-        svg {
-          width: 20px;
-        }
-      }
-      .actions {
-        gap: 3px;
+        font-size: 1rem;
+        padding: 8px 12px 5px;
       }
       .contact {
-        min-height: 44px;
-        padding: 10px;
-        font-size: 0.7rem;
-        letter-spacing: 0;
+        padding: 9px 12px 7px;
+        font-size: 0.9rem;
       }
       .burger {
-        width: 38px;
-        flex: none;
+        display: block;
       }
       nav {
         position: fixed;
         inset: var(--header-h) 0 auto 0;
         flex-direction: column;
         gap: 0;
-        background: rgba(4, 9, 12, 0.96);
-        backdrop-filter: blur(14px);
-        padding: 8px 20px 24px;
-        border-bottom: 1px solid var(--line);
-        transform: translateY(-120%);
+        margin: 0;
+        background: var(--paper);
+        padding: 4px 20px 20px;
+        border-bottom: 2px solid var(--ink);
+        transform: translateY(-8px);
         opacity: 0;
+        visibility: hidden;
         transition:
-          transform 0.35s,
-          opacity 0.35s;
-        pointer-events: none;
+          transform 0.25s var(--ease),
+          opacity 0.2s,
+          visibility 0.2s;
         &.open {
           transform: none;
           opacity: 1;
-          pointer-events: auto;
+          visibility: visible;
         }
         a {
-          padding: 16px 0;
-          font-size: 1.1rem;
+          padding: 16px 0 13px;
+          font-size: 1.2rem;
           border-bottom: 1px solid var(--line);
         }
       }
@@ -218,20 +165,14 @@ import { contactLink } from '../data/contact';
 })
 export class Header {
   protected readonly contact = contactLink();
-  protected solid = signal(false);
   protected menu = signal(false);
-  protected mobile = signal(window.innerWidth <= 820);
+  protected mobile = signal(window.innerWidth <= 760);
   @HostListener('window:resize')
   onResize() {
-    this.mobile.set(window.innerWidth <= 820);
+    this.mobile.set(window.innerWidth <= 760);
   }
   @HostListener('window:keydown.escape')
   closeMenu() {
     this.menu.set(false);
-  }
-
-  @HostListener('window:scroll')
-  onScroll() {
-    this.solid.set(window.scrollY > 40);
   }
 }

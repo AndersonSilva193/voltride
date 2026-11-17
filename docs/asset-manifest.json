@@ -1,0 +1,55 @@
+{
+  "project": "Voltride (portfólio, marca fictícia)",
+  "generator": "Higgsfield MCP",
+  "generated_at": "2026-11-17",
+  "rights": "Gerado na conta Higgsfield do autor do projeto; uso em portfólio. Desenho das motos baseado nas fotos de referência já existentes no repositório.",
+  "credits": {
+    "balance_before": 41.25,
+    "images": "11 x 0,25 = 2,75 (2 quadro A, 2 quadro B, 7 catálogo; 3 envios recusados por limite de taxa não geraram job)",
+    "video": 16,
+    "balance_after": 22.5
+  },
+  "assets": [
+    {
+      "id": "hero-keyframe-A",
+      "model": "gpt_image_2_6",
+      "job_id": "0777dd59-5e72-47c2-a3d5-7cacbec56774",
+      "source": "assets-src/hero/source-A.png",
+      "use": "quadro inicial do vídeo; rejeitado o candidato ac5459c6 (menos parede livre para o título)"
+    },
+    {
+      "id": "hero-keyframe-B",
+      "model": "gpt_image_2_6",
+      "job_id": "612d709f-1535-456a-9278-a8d7949e2986",
+      "source": "assets-src/hero/source-B.png",
+      "use": "quadro final; rejeitado bf832b7f (cabo não ligava na tomada)"
+    },
+    {
+      "id": "hero-day-video",
+      "model": "minimax_h3 (2K, 8 s, start_image + end_image)",
+      "job_id": "bd519a8f-89a4-4cd3-a59c-458b792c29f8",
+      "source": "assets-src/hero/source-day.mp4 (fora do git, 9 MB)",
+      "derived": [
+        "public/media/hero/seq/d_0001..0064.webp (1440 px, q50, ~6,8 MB)",
+        "public/media/hero/seq/m_0001..0048.webp (720 px, q62, ~2,0 MB)",
+        "public/media/hero/poster-{800,1600}.webp (frame 0)",
+        "public/media/hero/end-{800,1600}.webp (último frame, fallback)"
+      ],
+      "fallback": "poster da manhã; se a sequência falhar, o poster da tarde entra por opacidade"
+    },
+    {
+      "id": "catalog-photos",
+      "model": "gpt_image_2_6 (referência = foto antiga de cada modelo)",
+      "jobs": {
+        "dropp-joy-city": "f7b0a908-2de2-4a69-b5aa-247a39ac6643",
+        "mova-way-4": "37680d5b-dc31-470b-a5d6-6a6b9f7ce7b0",
+        "xplore-urban": "05d86434-6223-4b45-8367-c0247c60b2c0",
+        "yoo-y200": "cda02d1f-6ac3-4feb-b473-099ee6983dfd",
+        "wehawk-mini-scooter": "96a06984-55ab-4fda-932e-1761a95aec89",
+        "lito-ft03-z": "c118d9b4-52a8-4ee6-a90a-ae85814bce75",
+        "capuccino-1000w": "0db8cdc1-b90c-430c-88da-c28f4d3d5f47"
+      },
+      "derived": "public/media/catalog/<id>-{480,768,1024}.webp"
+    }
+  ]
+}
